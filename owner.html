@@ -10,22 +10,17 @@
         
         .section-title { color: #fff; background: #222; padding: 10px; margin-top: 40px; border-left: 5px solid #d4af37; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* BOX LOGO */
         .log-box { background: #111; padding: 15px; border: 1px dashed #555; height: 200px; overflow-y: scroll; font-family: monospace; color: #ccc; margin-top: 10px; }
         .log-item { border-bottom: 1px solid #333; padding: 5px 0; font-size: 13px; }
         .log-time { color: #888; margin-right: 10px; }
         .log-action { font-weight: bold; }
-        .act-ban { color: red; }
-        .act-unban { color: #0f0; }
-        .act-reset { color: orange; }
+        .act-ban { color: red; } .act-unban { color: #0f0; } .act-reset { color: orange; } .act-role { color: cyan; }
 
-        /* TABLE */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { border: 1px solid #333; padding: 12px; text-align: left; vertical-align: middle; }
         th { background: #222; color: #d4af37; }
         tr:hover { background: #111; }
 
-        /* BUTTONS & FORMS */
         select { padding: 5px; background: #000; color: white; border: 1px solid #555; }
         button { padding: 5px 10px; cursor: pointer; font-weight: bold; border: none; border-radius: 3px; font-size: 12px; margin-right: 5px; }
         .btn-save { background: #0f0; color: black; }
@@ -34,9 +29,7 @@
         .btn-open { background: cyan; color: black; }
 
         .role-tag { padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 11px; text-transform: uppercase; }
-        .role-admin { background: yellow; color: black; }
-        .role-mod { background: orange; color: black; }
-        .role-user { background: #333; color: white; }
+        .role-admin { background: yellow; color: black; } .role-mod { background: orange; color: black; } .role-user { background: #333; color: white; }
     </style>
 </head>
 <body>
@@ -46,14 +39,10 @@
     </div>
 
     <h2 class="section-title">💀 DEATH NOTE (Nhật Ký Hành Quyết)</h2>
-    <div class="log-box">
-        {{LOG_LIST}}
-    </div>
+    <div class="log-box">{{LOG_LIST}}</div>
 
     <h2 class="section-title">📩 HỘP THƯ BÁO CÁO ({{COUNT}})</h2>
-    <div>
-        {{REQUEST_LIST}}
-    </div>
+    <div>{{REQUEST_LIST}}</div>
 
     <h2 class="section-title">👥 BẢNG PHONG THẦN & TRỪNG PHẠT</h2>
     <table>
@@ -70,6 +59,5 @@
             {{USER_MANAGEMENT_LIST}}
         </tbody>
     </table>
-
 </body>
 </html>
