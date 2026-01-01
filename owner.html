@@ -4,28 +4,23 @@
     <meta charset="UTF-8">
     <title>OWNER DASHBOARD - QUYỀN LỰC TỐI CAO</title>
     <style>
-        /* SỬA LẠI DÒNG NÀY: Thêm padding-top 80px để né cái Logo ra */
         body { 
             background: #000; 
             color: #d4af37; 
             font-family: 'Segoe UI', sans-serif; 
-            padding: 80px 20px 20px 20px; 
+            padding: 80px 20px 20px 20px; /* Đã fix né Logo */
         }
-
-        .header { 
-            border-bottom: 2px solid #d4af37; 
-            padding-bottom: 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        
-        /* Đẩy tiêu đề sang phải một chút cho cân đối */
+        .header { border-bottom: 2px solid #d4af37; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
         h1 { margin: 0; text-transform: uppercase; text-shadow: 0 0 10px #d4af37; padding-left: 10px; }
         
-        .section-title { color: #fff; background: #222; padding: 10px; margin-top: 40px; border-left: 5px solid #d4af37; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
+        /* Chỉnh lại tiêu đề để chứa nút bấm */
+        .section-header { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: #222; padding: 10px; margin-top: 40px; border-left: 5px solid #d4af37; 
+        }
+        .section-title { margin: 0; color: #fff; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
         
-        .log-box { background: #111; padding: 15px; border: 1px dashed #555; height: 200px; overflow-y: scroll; font-family: monospace; color: #ccc; margin-top: 10px; }
+        .log-box { background: #111; padding: 15px; border: 1px dashed #555; height: 200px; overflow-y: scroll; font-family: monospace; color: #ccc; margin-top: 5px; }
         .log-item { border-bottom: 1px solid #333; padding: 5px 0; font-size: 13px; }
         .log-time { color: #888; margin-right: 10px; }
         .log-action { font-weight: bold; }
@@ -45,6 +40,11 @@
         .btn-back { border: 1px solid white; padding: 8px 20px; color: white; text-decoration: none; font-weight: bold; transition: 0.3s; }
         .btn-back:hover { background: white; color: black; }
 
+        /* Nút Log Mới */
+        .btn-export { background: #0088ff; color: white; text-decoration: none; padding: 5px 10px; font-size: 12px; font-weight: bold; border-radius: 3px; display: inline-block;}
+        .btn-clear-log { background: #555; color: white; margin-left: 5px; }
+        .btn-clear-log:hover { background: red; }
+
         .role-tag { padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 11px; text-transform: uppercase; }
         .role-admin { background: yellow; color: black; } .role-mod { background: orange; color: black; } .role-user { background: #333; color: white; }
     </style>
@@ -55,13 +55,21 @@
         <a href="/tool" class="btn-back">⬅ Về Tool</a>
     </div>
 
-    <h2 class="section-title">💀 DEATH NOTE (Nhật Ký Hành Quyết)</h2>
+    <div class="section-header">
+        <h2 class="section-title">💀 DEATH NOTE (Nhật Ký Hành Quyết)</h2>
+        <div>
+            <a href="/owner/export-logs" class="btn-export">📥 XUẤT LOG (.TXT)</a>
+            <form action="/owner/clear-logs" method="POST" style="display:inline;" onsubmit="return confirm('Xóa sạch nhật ký? Không thể khôi phục!');">
+                <button type="submit" class="btn-clear-log">🗑️ XÓA SẠCH</button>
+            </form>
+        </div>
+    </div>
     <div class="log-box">{{LOG_LIST}}</div>
 
-    <h2 class="section-title">📩 HỘP THƯ BÁO CÁO ({{COUNT}})</h2>
+    <div class="section-header"><h2 class="section-title">📩 HỘP THƯ BÁO CÁO ({{COUNT}})</h2></div>
     <div>{{REQUEST_LIST}}</div>
 
-    <h2 class="section-title">👥 BẢNG PHONG THẦN & TRỪNG PHẠT</h2>
+    <div class="section-header"><h2 class="section-title">👥 BẢNG PHONG THẦN & TRỪNG PHẠT</h2></div>
     <table>
         <thead>
             <tr>
