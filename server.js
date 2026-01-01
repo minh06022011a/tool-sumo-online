@@ -11,49 +11,58 @@ const upload = multer({ dest: 'uploads/' });
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// --- CÁC HÀM XỬ LÝ DATABASE (users.json) ---
 const DATA_FILE = path.join(__dirname, 'users.json');
 
-// Hàm đọc danh sách user
-function getUsers() {
-    if (!fs.existsSync(DATA_FILE)) return [];
-    const data = fs.readFileSync(DATA_FILE);
-    return JSON.parse(data);
+// --- HÀM HỖ TRỢ HIỂN THỊ THÔNG BÁO ĐẸP ---
+function renderMessage(res, message, linkObj) {
+    let template = fs.readFileSync(path.join(__dirname, 'message.html'), 'utf-8');
+    template = template.replace('REPLACE_MESSAGE', message);
+    template = template.replace('REPLACE_LINK', linkObj);
+    res.send(template);
 }
 
-// Hàm lưu user mới
+// Hàm đọc user
+function getUsers() {
+    if (!fs.existsSync(DATA_FILE)) return []; // Nếu chưa có file thì trả về rỗng
+    try {
+        const data = fs.readFileSync(DATA_FILE);
+        return JSON.parse(data);
+    } catch (e) { return []; }
+}
+
+// Hàm lưu user
 function saveUser(username, password) {
     const users = getUsers();
-    // Kiểm tra xem trùng tên không
-    if (users.find(u => u.username === username)) return false;
-    
+    if (users.find(u => u.username === username)) return false; // Trùng tên
     users.push({ username, password });
     fs.writeFileSync(DATA_FILE, JSON.stringify(users, null, 2));
     return true;
 }
 
-// --- ĐỊNH TUYẾN (ROUTER) ---
+// --- ROUTER ---
 
-// 1. TRANG CHỦ (Landing Page)
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// 2. TRANG ĐĂNG KÝ
+// ĐĂNG KÝ
 app.get('/register', (req, res) => {
     res.sendFile(path.join(__dirname, 'register.html'));
 });
 
 app.post('/register', (req, res) => {
     const { username, password } = req.body;
+    
+    // Logic tạo ADMIN: Ai nhanh tay đăng ký tên 'admin' trước thì được làm admin
     if (saveUser(username, password)) {
-        res.send(`<script>alert("Đăng ký thành công! Hãy đăng nhập."); window.location.href="/login";</script>`);
+        // Thay vì alert phèn, ta dùng giao diện đẹp
+        renderMessage(res, `Đăng ký thành công tài khoản <b>${username}</b>!`, '/login');
     } else {
-        res.send(`<script>alert("Tên này có người dùng rồi!"); window.history.back();</script>`);
+        renderMessage(res, `Tên tài khoản <b>${username}</b> đã tồn tại! Vui lòng chọn tên khác.`, '/register');
     }
 });
 
-// 3. TRANG ĐĂNG NHẬP
+// ĐĂNG NHẬP
 app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'login.html'));
 });
@@ -62,38 +71,39 @@ app.post('/login', (req, res) => {
     const { username, password } = req.body;
     const users = getUsers();
     
-    // Tìm trong danh sách users xem có ai khớp không
+    // Kiểm tra tài khoản
     const user = users.find(u => u.username === username && u.password === password);
 
     if (user) {
         res.sendFile(path.join(__dirname, 'tool.html'));
     } else {
-        res.send('<h1>SAI TÀI KHOẢN HOẶC MẬT KHẨU! <a href="/login">Thử lại</a></h1>');
+        // Lỗi đăng nhập giờ cũng hiện đẹp luôn, không trắng tinh nữa
+        renderMessage(res, 'Sai tên tài khoản hoặc mật khẩu!', '/login');
     }
 });
 
-// 4. XỬ LÝ CONVERT VIDEO
+// CONVERT VIDEO (Giữ nguyên)
 app.post('/upload', upload.single('video'), (req, res) => {
-    if (!req.file) return res.send('Chưa chọn file!');
+    if (!req.file) return renderMessage(res, 'Vui lòng chọn file video!', '/tool.html');
 
     const inputPath = req.file.path;
     const outputName = `video_${Date.now()}.3gp`;
     const outputPath = path.join(__dirname, outputName);
 
-    // Lệnh Convert chuẩn cho máy cỏ
+    // Lệnh Convert
     const command = `"${ffmpegPath}" -i "${inputPath}" -vcodec mpeg4 -acodec libopencore_amrnb -ac 1 -ar 8000 -s 176x144 -r 15 -y "${outputPath}"`;
 
-    console.log("Processing: " + command);
+    console.log("Đang xử lý: " + command);
 
     exec(command, (error) => {
-        if (error) return res.send(`Lỗi: ${error.message}`);
+        if (error) return renderMessage(res, 'Lỗi convert: ' + error.message, '/tool.html');
+        
         res.download(outputPath, () => {
-            fs.unlinkSync(inputPath); // Xóa file gốc
-            // fs.unlinkSync(outputPath); // Giữ file kết quả (hoặc xóa tùy ý)
+            fs.unlinkSync(inputPath); 
         });
     });
 });
 
 app.listen(3000, () => {
-    console.log("Server ProMax running at http://localhost:3000");
+    console.log("Server running...");
 });
