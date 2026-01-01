@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Hồ sơ của tôi</title>
+    <style>
+        body { background: #111; color: #0f0; font-family: monospace; display: flex; justify-content: center; padding-top: 50px; }
+        .box { border: 1px solid #0f0; padding: 30px; width: 400px; background: #222; border-radius: 10px; }
+        h2 { text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px; }
+        .info { margin-bottom: 20px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; background: black; border: 1px solid #555; color: white; }
+        button { width: 100%; padding: 10px; background: #0f0; color: black; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
+        .back-btn { background: #555; color: white; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>👤 HỒ SƠ: {{USERNAME}}</h2>
+        <div class="info">
+            <p>Vai trò: <b>{{ROLE}}</b></p>
+            <p>Trạng thái: {{STATUS}}</p>
+        </div>
+
+        <h3>🔐 Đổi Mật Khẩu</h3>
+        <form action="/change-password" method="POST">
+            <input type="password" name="oldPass" placeholder="Mật khẩu cũ" required>
+            <input type="password" name="newPass" placeholder="Mật khẩu mới" required>
+            <button type="submit">CẬP NHẬT MẬT KHẨU</button>
+        </form>
+
+        <a href="/tool"><button class="back-btn">⬅ Quay lại Tool</button></a>
+    </div>
+</body>
+</html>
