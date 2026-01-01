@@ -4,26 +4,36 @@
     <meta charset="UTF-8">
     <title>OWNER DASHBOARD - QUYỀN LỰC TỐI CAO</title>
     <style>
-        body { background: #000; color: #d4af37; font-family: sans-serif; padding: 20px; }
+        body { background: #000; color: #d4af37; font-family: 'Segoe UI', sans-serif; padding: 20px; }
         .header { border-bottom: 2px solid #d4af37; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; text-transform: uppercase; }
+        h1 { margin: 0; text-transform: uppercase; text-shadow: 0 0 10px #d4af37; }
         
-        /* Hộp thư báo cáo */
-        .section-title { color: #fff; background: #333; padding: 10px; margin-top: 30px; border-radius: 5px; }
-        .request-box { border: 1px solid #555; background: #111; padding: 15px; margin-bottom: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .section-title { color: #fff; background: #222; padding: 10px; margin-top: 40px; border-left: 5px solid #d4af37; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Bảng nhân sự */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #333; padding: 10px; text-align: left; color: white; }
+        /* BOX LOGO */
+        .log-box { background: #111; padding: 15px; border: 1px dashed #555; height: 200px; overflow-y: scroll; font-family: monospace; color: #ccc; margin-top: 10px; }
+        .log-item { border-bottom: 1px solid #333; padding: 5px 0; font-size: 13px; }
+        .log-time { color: #888; margin-right: 10px; }
+        .log-action { font-weight: bold; }
+        .act-ban { color: red; }
+        .act-unban { color: #0f0; }
+        .act-reset { color: orange; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        th, td { border: 1px solid #333; padding: 12px; text-align: left; vertical-align: middle; }
         th { background: #222; color: #d4af37; }
-        
-        /* Nút và Select */
+        tr:hover { background: #111; }
+
+        /* BUTTONS & FORMS */
         select { padding: 5px; background: #000; color: white; border: 1px solid #555; }
-        button { padding: 5px 15px; cursor: pointer; font-weight: bold; border: none; border-radius: 3px; }
+        button { padding: 5px 10px; cursor: pointer; font-weight: bold; border: none; border-radius: 3px; font-size: 12px; margin-right: 5px; }
         .btn-save { background: #0f0; color: black; }
         .btn-kill { background: red; color: white; }
-        
-        .role-tag { padding: 2px 5px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+        .btn-reset { background: orange; color: black; }
+        .btn-open { background: cyan; color: black; }
+
+        .role-tag { padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 11px; text-transform: uppercase; }
         .role-admin { background: yellow; color: black; }
         .role-mod { background: orange; color: black; }
         .role-user { background: #333; color: white; }
@@ -32,7 +42,12 @@
 <body>
     <div class="header">
         <h1>👑 OWNER CONTROL CENTER</h1>
-        <a href="/tool" style="color: white; text-decoration: none;">[⬅ Về Tool]</a>
+        <a href="/tool" style="color: white; text-decoration: none; border: 1px solid white; padding: 5px 15px;">⬅ Về Tool</a>
+    </div>
+
+    <h2 class="section-title">💀 DEATH NOTE (Nhật Ký Hành Quyết)</h2>
+    <div class="log-box">
+        {{LOG_LIST}}
     </div>
 
     <h2 class="section-title">📩 HỘP THƯ BÁO CÁO ({{COUNT}})</h2>
@@ -40,14 +55,15 @@
         {{REQUEST_LIST}}
     </div>
 
-    <h2 class="section-title">👥 BẢNG PHONG THẦN (Thăng chức / Giáng chức)</h2>
+    <h2 class="section-title">👥 BẢNG PHONG THẦN & TRỪNG PHẠT</h2>
     <table>
         <thead>
             <tr>
                 <th>Tên tài khoản</th>
-                <th>Chức vụ hiện tại</th>
-                <th>Trạng thái</th>
-                <th>Điều chỉnh chức vụ</th>
+                <th>Chức vụ</th>
+                <th>Tình trạng</th>
+                <th>Đổi chức vụ</th>
+                <th>Hành quyết (Ban/Reset)</th>
             </tr>
         </thead>
         <tbody>
