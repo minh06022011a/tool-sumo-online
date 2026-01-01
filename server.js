@@ -9,7 +9,7 @@ const ffmpegPath = require('ffmpeg-static');
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
-const SECRET_SESSION = "minh_boss_pro_max_final_v5";
+const SECRET_SESSION = "minh_boss_ultimate_security";
 
 // --- LOGO VIP RGB ---
 const VIP_LOGO = `
@@ -23,6 +23,7 @@ const VIP_LOGO = `
 
 app.set('trust proxy', true); 
 app.use(session({ secret: SECRET_SESSION, resave: false, saveUninitialized: true }));
+app.use(express.json()); // QUAN TRỌNG: Đọc dữ liệu JSON (Vân tay)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
@@ -47,27 +48,18 @@ function addAdminLog(action, target, detail) {
     if(logs.length > 50) logs.pop(); saveData(LOG_FILE, logs);
 }
 
-// HÀM DỊCH THỜI GIAN (VD: "1m30s" -> mili giây)
+// HÀM DỊCH THỜI GIAN
 function parseDuration(input) {
     if(!input) return 0;
     input = input.toLowerCase().trim();
-    if(input === 'vv' || input === 'forever' || input === 'vinhvien') return -1;
-    
+    if(input === 'vv' || input === 'forever') return -1;
     let totalMs = 0;
-    // Regex tìm số đứng trước s, m, h, d
-    const s = input.match(/(\d+)s/);
-    const m = input.match(/(\d+)m/);
-    const h = input.match(/(\d+)h/);
-    const d = input.match(/(\d+)d/);
-
+    const s = input.match(/(\d+)s/); const m = input.match(/(\d+)m/); const h = input.match(/(\d+)h/); const d = input.match(/(\d+)d/);
     if (s) totalMs += parseInt(s[1]) * 1000;
     if (m) totalMs += parseInt(m[1]) * 60 * 1000;
     if (h) totalMs += parseInt(h[1]) * 60 * 60 * 1000;
     if (d) totalMs += parseInt(d[1]) * 24 * 60 * 60 * 1000;
-    
-    // Nếu nhập số không (vd: 10) thì mặc định là phút
     if (totalMs === 0 && !isNaN(input)) totalMs = parseInt(input) * 60 * 1000;
-    
     return totalMs;
 }
 
@@ -95,18 +87,14 @@ function requireLogin(req, res, next) {
     const users = getData(USER_FILE);
     const u = users.find(x => x.username === req.session.user.username);
     if (!u) { req.session.destroy(); return res.redirect('/login'); }
-    
-    // Check Ban
     if (u.banned) {
         if (u.banUntil === -1) return renderMessage(res, `⛔ BẠN ĐÃ BỊ KHÓA VĨNH VIỄN!<br>Lý do: ${u.banReason}`, '/');
         if (u.banUntil > Date.now()) {
             let left = Math.ceil((u.banUntil - Date.now())/1000);
             return renderMessage(res, `⛔ ĐANG BỊ KHÓA MÕM!<br>Mở lại sau: <b>${left} giây</b> nữa.<br>Lý do: ${u.banReason}`, '/');
         }
-        // Hết hạn ban -> Tự mở
         u.banned = false; u.banUntil = 0; saveData(USER_FILE, users);
     }
-    
     req.session.user = u; next();
 }
 function requireOwner(req, res, next) { if (req.session.user.role !== 'owner') return renderMessage(res, 'Cút! Chỉ dành cho Owner.', '/tool'); next(); }
@@ -140,19 +128,134 @@ app.post('/login', (req, res) => {
 });
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-// AUTO KEY
+// --- HỆ THỐNG AUTO KEY 3.0: CHECK VÂN TAY THIẾT BỊ (FINGERPRINT) ---
+
+// 1. Trang Loading để quét vân tay (Gửi cho Client)
 app.get('/lay-key-tu-dong', (req, res) => {
+    // Trả về trang HTML chứa code JavaScript quét vân tay
+    const html = `
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+        <meta charset="UTF-8">
+        <title>ĐANG KIỂM TRA THIẾT BỊ...</title>
+        <style>
+            body { background: black; color: #0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; }
+            .loader { border: 5px solid #333; border-top: 5px solid #0f0; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+    </head>
+    <body>
+        <div class="loader"></div>
+        <h2 id="status">ĐANG QUÉT VÂN TAY THIẾT BỊ...</h2>
+        <p>Vui lòng chờ giây lát.</p>
+        
+        <script>
+            // HÀM TẠO VÂN TAY (Dựa vào Canvas - phần cứng đồ họa)
+            function getFingerprint() {
+                try {
+                    var canvas = document.createElement('canvas');
+                    var ctx = canvas.getContext('2d');
+                    var txt = "SumoTool,Browser,MachineID";
+                    ctx.textBaseline = "top";
+                    ctx.font = "14px 'Arial'";
+                    ctx.textBaseline = "alphabetic";
+                    ctx.fillStyle = "#f60";
+                    ctx.fillRect(125,1,62,20);
+                    ctx.fillStyle = "#069";
+                    ctx.fillText(txt, 2, 15);
+                    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+                    ctx.fillText(txt, 4, 17);
+                    // Lấy mã hóa Base64 của hình ảnh vừa vẽ -> Đây là Fingerprint
+                    return canvas.toDataURL().slice(-60); 
+                } catch(e) {
+                    return "Error_" + Math.random();
+                }
+            }
+
+            // Gửi vân tay lên Server
+            async function checkKey() {
+                const fp = getFingerprint();
+                document.getElementById('status').innerText = "ĐANG XỬ LÝ DỮ LIỆU...";
+                
+                try {
+                    const response = await fetch('/api/get-key-fp', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fingerprint: fp })
+                    });
+                    const data = await response.json();
+                    
+                    // Hiển thị Key
+                    document.body.innerHTML = data.html;
+                } catch(e) {
+                    document.getElementById('status').innerText = "Lỗi kết nối Server!";
+                }
+            }
+            
+            // Chạy ngay khi vào trang
+            setTimeout(checkKey, 1000);
+        </script>
+    </body>
+    </html>
+    `;
+    res.send(html);
+});
+
+// 2. API Xử lý Vân Tay (Server nhận mã hash)
+app.post('/api/get-key-fp', (req, res) => {
+    const { fingerprint } = req.body;
     const userIP = req.ip || req.connection.remoteAddress;
     let keys = getData(KEY_FILE);
     const now = Date.now();
-    let cookieKey = null; if (req.headers.cookie) { const match = req.headers.cookie.match(/tracking_key=([^;]+)/); if (match) cookieKey = match[1]; }
-    let existingKey = keys.find(k => (k.ip === userIP && k.expires > now) || (cookieKey && k.code === cookieKey && k.expires > now));
+
+    // Logic: Kiểm tra xem Vân Tay này HOẶC IP này đã có key chưa
+    // Fingerprint mạnh hơn IP vì VPN không đổi được Fingerprint
+    let existingKey = keys.find(k => 
+        (k.fingerprint === fingerprint && k.expires > now) || 
+        (k.ip === userIP && k.expires > now)
+    );
+
     let keyToShow = "";
-    if (existingKey) { keyToShow = existingKey.code; res.setHeader('Set-Cookie', `tracking_key=${keyToShow}; Max-Age=86400; Path=/; HttpOnly`); }
-    else { const newKey = generateRandomKey(); keys.push({ code: newKey, ip: userIP, created: now, expires: now + 86400000, usedBy: null }); saveData(KEY_FILE, keys); keyToShow = newKey; res.setHeader('Set-Cookie', `tracking_key=${newKey}; Max-Age=86400; Path=/; HttpOnly`); }
-    let html = fs.readFileSync(path.join(__dirname, 'key_display.html'), 'utf-8');
-    html = html.replace('{{GENERATED_KEY}}', keyToShow); res.send(html);
+
+    if (existingKey) {
+        keyToShow = existingKey.code;
+    } else {
+        const newKey = generateRandomKey();
+        keys.push({ 
+            code: newKey, 
+            ip: userIP, 
+            fingerprint: fingerprint, // Lưu lại vân tay
+            created: now, 
+            expires: now + 86400000, 
+            usedBy: null 
+        });
+        saveData(KEY_FILE, keys);
+        keyToShow = newKey;
+    }
+
+    // Đọc file giao diện và trả về cho JS client
+    let htmlDisplay = fs.readFileSync(path.join(__dirname, 'key_display.html'), 'utf-8');
+    // Chèn script copy vào HTML trả về để nút copy hoạt động
+    const copyScript = `
+    <script>
+        function copyKey() {
+            var keyText = document.getElementById("myKey").innerText;
+            navigator.clipboard.writeText(keyText).then(function() {
+                alert("✅ Đã COPY thành công! Quay lại nhập key nhé.");
+                window.location.href = "/tool"; 
+            }, function(err) { alert("Lỗi: " + err); });
+        }
+    </script>`;
+    
+    htmlDisplay = htmlDisplay.replace('{{GENERATED_KEY}}', keyToShow) + copyScript;
+    
+    // Trả về JSON chứa HTML
+    res.json({ html: htmlDisplay });
 });
+
+
+// ... (CÁC PHẦN DƯỚI GIỮ NGUYÊN TỪ BẢN TRƯỚC ĐỂ ĐẢM BẢO QUYỀN ADMIN) ...
 
 app.post('/activate-key', requireLogin, (req, res) => {
     const { key } = req.body; let keys = getData(KEY_FILE); let users = getData(USER_FILE);
@@ -180,49 +283,25 @@ app.post('/upload', requireLogin, requireVip, upload.single('video'), (req, res)
     exec(cmd, (e) => { if(e) return renderMessage(res, 'Lỗi: ' + e.message, '/tool'); res.download(output, () => fs.unlinkSync(input)); });
 });
 
-// --- OWNER PANEL ---
 app.get('/owner', requireLogin, requireOwner, (req, res) => {
     const users = getData(USER_FILE); const keys = getData(KEY_FILE);
     const userLogs = getData(USER_LOG_FILE); const adminLogs = getData(LOG_FILE);
     let html = fs.readFileSync(path.join(__dirname, 'owner.html'), 'utf-8');
     
-    let keyRows = keys.map(k => `<tr><td style="color:yellow;font-weight:bold;">${k.code}</td><td>${k.ip||'N/A'}</td><td style="color:${Date.now()>k.expires?'red':'lime'}">${Date.now()>k.expires?'Hết':'Còn'}</td><td>${k.usedBy||'-'}</td><td><form action="/owner/delete-key" method="POST"><input type="hidden" name="keyCode" value="${k.code}"><button style="background:red;color:white;border:none;">Xóa</button></form></td></tr>`).join('');
+    // THÊM CỘT FINGERPRINT VÀO BẢNG KEY ĐỂ EM SOI
+    let keyRows = keys.map(k => `<tr><td style="color:yellow;font-weight:bold;">${k.code}</td><td><span style="font-size:10px">${k.fingerprint ? 'Máy:'+k.fingerprint.substr(0,8)+'...' : k.ip}</span></td><td style="color:${Date.now()>k.expires?'red':'lime'}">${Date.now()>k.expires?'Hết':'Còn'}</td><td>${k.usedBy||'-'}</td><td><form action="/owner/delete-key" method="POST"><input type="hidden" name="keyCode" value="${k.code}"><button style="background:red;color:white;border:none;">Xóa</button></form></td></tr>`).join('');
+    
     let ulHtml = userLogs.map(l => `<div class="log-row"><span class="time">[${l.time}]</span> <span class="user">${l.user}</span>: <span class="action">${l.action}</span></div>`).join('');
     let alHtml = adminLogs.map(l => `<div class="log-row"><span class="time">[${l.time}]</span> <b style="color:red">${l.action}</b> ${l.target} (${l.detail})</div>`).join('');
     
-    // --- PHẦN QUẢN LÝ USER: ROLE & BAN TÙY CHỈNH ---
     let uHtml = users.map(u => { 
         if(u.role==='owner') return '';
+        const displayRole = u.role.toUpperCase();
+        let actionBtn = !u.banned 
+            ? `<form action="/owner/ban" method="POST" style="display:flex;gap:2px;align-items:center;"><input type="hidden" name="target" value="${u.username}"><input type="text" name="duration" placeholder="10s, vv" style="width:50px;background:#222;color:white;border:1px solid #555;font-size:11px;" required><button class="btn-kill" style="font-size:11px;">TRẢM</button></form>` 
+            : `<form action="/owner/unban" method="POST" style="display:inline"><input type="hidden" name="target" value="${u.username}"><button class="btn-save">ÂN XÁ</button></form>`;
         
-        // 1. CỘT ĐỔI ROLE (FORM)
-        let roleForm = `
-        <form action="/owner/set-role" method="POST" style="display:flex;gap:5px;">
-            <input type="hidden" name="target" value="${u.username}">
-            <select name="newRole" style="background:black;color:cyan;border:1px solid #555;">
-                <option value="user" ${u.role==='user'?'selected':''}>User</option>
-                <option value="vip" ${u.role==='vip'?'selected':''}>Vip</option>
-                <option value="mod" ${u.role==='mod'?'selected':''}>Mod</option>
-                <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
-            </select>
-            <button class="btn-save" style="padding:2px 5px;">Lưu</button>
-        </form>`;
-
-        // 2. CỘT HÀNH ĐỘNG (BAN TÙY CHỈNH / ÂN XÁ)
-        let actionBtn = '';
-        if (u.banned) {
-            // Nếu đang bị ban -> Hiện nút MỞ
-            let banInfo = (u.banUntil === -1) ? "VĨNH VIỄN" : Math.ceil((u.banUntil - Date.now())/1000) + "s nữa";
-            actionBtn = `<span style="color:red;font-size:11px;margin-right:5px;">${banInfo}</span>
-            <form action="/owner/unban" method="POST" style="display:inline"><input type="hidden" name="target" value="${u.username}"><button class="btn-save">ÂN XÁ</button></form>`;
-        } else {
-            // Nếu chưa ban -> Hiện ô nhập thời gian + nút Ban
-            actionBtn = `
-            <form action="/owner/ban" method="POST" style="display:flex;gap:2px;align-items:center;">
-                <input type="hidden" name="target" value="${u.username}">
-                <input type="text" name="duration" placeholder="VD: 10s, 1m, vv" style="width:70px;background:#222;color:white;border:1px solid #555;font-size:11px;padding:2px;" required>
-                <button class="btn-kill" style="font-size:11px;">TRẢM</button>
-            </form>`;
-        }
+        let roleForm = `<form action="/owner/set-role" method="POST" style="display:flex;gap:5px;"><input type="hidden" name="target" value="${u.username}"><select name="newRole" style="background:black;color:cyan;border:1px solid #555;"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="vip" ${u.role==='vip'?'selected':''}>Vip</option><option value="mod" ${u.role==='mod'?'selected':''}>Mod</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select><button class="btn-save" style="padding:0 5px;">Lưu</button></form>`;
 
         return `<tr><td>${u.username}</td><td>${roleForm}</td><td style="color:${u.banned?'red':'lime'}">${u.banned?'BỊ TRẢM':'SẠCH'}</td><td>${actionBtn}</td></tr>`; 
     }).join('');
@@ -233,51 +312,13 @@ app.get('/owner', requireLogin, requireOwner, (req, res) => {
     res.send(html);
 });
 
-// LOGIC ĐỔI ROLE
-app.post('/owner/set-role', requireLogin, requireOwner, (req, res) => {
-    let users = getData(USER_FILE);
-    let u = users.find(x => x.username === req.body.target);
-    if(u) {
-        u.role = req.body.newRole;
-        saveData(USER_FILE, users);
-        addAdminLog("ROLE", u.username, `Set thành ${u.role.toUpperCase()}`);
-    }
-    res.redirect('/owner');
-});
+app.post('/owner/set-role', requireLogin, requireOwner, (req, res) => { let users = getData(USER_FILE); let u = users.find(x => x.username === req.body.target); if(u) { u.role = req.body.newRole; saveData(USER_FILE, users); addAdminLog("ROLE", u.username, `Set thành ${u.role.toUpperCase()}`); } res.redirect('/owner'); });
+app.post('/owner/ban', requireLogin, requireOwner, (req, res) => { let users = getData(USER_FILE); let u = users.find(x => x.username === req.body.target); if(u) { u.banned = true; u.banReason = "Admin ngứa tay"; let ms = parseDuration(req.body.duration); if (ms === -1) { u.banUntil = -1; addAdminLog("BAN", u.username, "VĨNH VIỄN"); } else { u.banUntil = Date.now() + ms; addAdminLog("BAN", u.username, `Khóa ${req.body.duration}`); } saveData(USER_FILE, users); } res.redirect('/owner'); });
+app.post('/owner/unban', requireLogin, requireOwner, (req, res) => { let users = getData(USER_FILE); let u = users.find(x => x.username === req.body.target); if(u) { u.banned = false; u.banUntil = 0; saveData(USER_FILE, users); addAdminLog("UNBAN", u.username, "Mở khóa"); } res.redirect('/owner'); });
 
-// LOGIC BAN TÙY CHỈNH (10s, 1m, vv...)
-app.post('/owner/ban', requireLogin, requireOwner, (req, res) => {
-    let users = getData(USER_FILE);
-    let u = users.find(x => x.username === req.body.target);
-    if(u) { 
-        u.banned = true; 
-        u.banReason = "Admin ngứa tay";
-        
-        // Tính thời gian
-        let ms = parseDuration(req.body.duration);
-        if (ms === -1) {
-            u.banUntil = -1;
-            addAdminLog("BAN", u.username, "VĨNH VIỄN");
-        } else {
-            u.banUntil = Date.now() + ms;
-            addAdminLog("BAN", u.username, `Khóa ${req.body.duration}`);
-        }
-        saveData(USER_FILE, users); 
-    }
-    res.redirect('/owner');
-});
-
-app.post('/owner/unban', requireLogin, requireOwner, (req, res) => {
-    let users = getData(USER_FILE);
-    let u = users.find(x => x.username === req.body.target);
-    if(u) { u.banned = false; u.banUntil = 0; saveData(USER_FILE, users); addAdminLog("UNBAN", u.username, "Mở khóa"); }
-    res.redirect('/owner');
-});
-
-// EXPORT & CLEAR
 app.get('/owner/export-user-logs', requireLogin, requireOwner, (req, res) => { const logs = getData(USER_LOG_FILE); const content = logs.map(l => `[${l.time}] User: ${l.user} | Action: ${l.action}`).join('\n'); const filePath = path.join(__dirname, 'UserLogs.txt'); fs.writeFileSync(filePath, content); res.download(filePath); });
 app.get('/owner/export-admin-logs', requireLogin, requireOwner, (req, res) => { const logs = getData(LOG_FILE); const content = logs.map(l => `[${l.time}] ACTION: ${l.action} | Target: ${l.target} | Detail: ${l.detail}`).join('\n'); const filePath = path.join(__dirname, 'DeathNote.txt'); fs.writeFileSync(filePath, content); res.download(filePath); });
 app.post('/owner/delete-key', requireLogin, requireOwner, (req, res) => { let keys = getData(KEY_FILE); keys = keys.filter(k => k.code !== req.body.keyCode); saveData(KEY_FILE, keys); res.redirect('/owner'); });
 app.post('/owner/clear-keys', requireLogin, requireOwner, (req, res) => { saveData(KEY_FILE, []); res.redirect('/owner'); });
 
-app.listen(3000, () => console.log("System FULL CONTROL ROLE & BAN running..."));
+app.listen(3000, () => console.log("System ULTIMATE FINGERPRINT running..."));
