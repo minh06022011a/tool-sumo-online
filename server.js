@@ -9,58 +9,44 @@ const ffmpegPath = require('ffmpeg-static');
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
-const SYSTEM_KEY = "VIP-PRO-MINH";
-const SECRET_SESSION = "minh_owner_badao_vutru";
+const SECRET_SESSION = "minh_boss_pro_max_v3";
 
-// --- LOGO VIP RGB ---
-const VIP_LOGO = `
-<style>
-    @keyframes rainbow-bg { 
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    .promax-badge {
-        background: linear-gradient(270deg, #ff0000, #ff8800, #ffff00, #00ff00, #0099ff, #6600ff, #ff00de);
-        background-size: 400% 400%;
-        animation: rainbow-bg 3s ease infinite;
-        color: white; padding: 3px 6px; border-radius: 4px; font-size: 12px; margin-left: 8px; 
-        box-shadow: 0 0 10px rgba(255,255,255,0.6); font-weight: bold; text-shadow: 1px 1px 2px black;
-    }
-</style>
-<a href="/" style="position: fixed; top: 15px; left: 20px; z-index: 99999; text-decoration: none; font-family: sans-serif; font-weight: 900; font-size: 20px; color: white; display: flex; align-items: center; text-shadow: 0 0 10px rgba(0,255,0,0.7); letter-spacing: 1px;">
-    <span style="font-size: 26px; margin-right: 5px; color: yellow; filter: drop-shadow(0 0 5px yellow);">⚡</span> 
-    CONVERT 
-    <span class="promax-badge">PRO MAX</span>
-</a>
-`;
+// LOGO VIP
+const VIP_LOGO = `<a href="/" style="position:fixed;top:10px;left:10px;z-index:9999;font-weight:900;color:white;text-decoration:none;text-shadow:0 0 5px #0f0;font-size:18px;">⚡ CONVERT <span style="background:linear-gradient(90deg,red,yellow,lime);color:black;padding:2px 5px;border-radius:4px;">PRO MAX</span></a>`;
+
+// Cần cái này để lấy IP chuẩn trên Render
+app.set('trust proxy', true); 
 
 app.use(session({ secret: SECRET_SESSION, resave: false, saveUninitialized: true }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
+// FILE DATA
 const USER_FILE = path.join(__dirname, 'users.json');
-const REQ_FILE = path.join(__dirname, 'requests.json');
 const LOG_FILE = path.join(__dirname, 'logs.json');
+const USER_LOG_FILE = path.join(__dirname, 'user_logs.json');
+const KEY_FILE = path.join(__dirname, 'active_keys.json');
 
+// HÀM HỖ TRỢ
 function getData(file) { if (!fs.existsSync(file)) fs.writeFileSync(file, '[]'); try { return JSON.parse(fs.readFileSync(file)); } catch { return []; } }
 function saveData(file, data) { fs.writeFileSync(file, JSON.stringify(data, null, 2)); }
 function injectLogo(html) { return html.replace(/(<body[^>]*>)/i, '$1' + VIP_LOGO); }
-function renderMessage(res, msg, link) { let tpl = fs.readFileSync(path.join(__dirname, 'message.html'), 'utf-8'); tpl = injectLogo(tpl); res.send(tpl.replace('REPLACE_MESSAGE', msg).replace('REPLACE_LINK', link)); }
+function renderMessage(res, msg, link) { let tpl = fs.readFileSync(path.join(__dirname, 'message.html'), 'utf-8'); res.send(injectLogo(tpl.replace('REPLACE_MESSAGE', msg).replace('REPLACE_LINK', link))); }
 
-function addLog(action, target, detail) {
-    let logs = getData(LOG_FILE);
-    logs.unshift({ time: new Date().toLocaleString(), action: action, target: target, detail: detail });
-    if (logs.length > 100) logs.pop(); // Lưu 100 dòng thôi
-    saveData(LOG_FILE, logs);
+// TẠO KEY NGẪU NHIÊN
+function generateRandomKey() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Bỏ I, 1, O, 0 cho đỡ nhầm
+    let result = 'SUMO-';
+    for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += '-';
+    for (let i = 0; i < 4; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+    return result; 
 }
 
-// Tự tạo admin nếu mất
 function initOwner() {
     let users = getData(USER_FILE);
-    const ownerExists = users.find(u => u.username === 'admin');
-    if (!ownerExists) {
-        users.push({ username: "admin", password: "123", role: "owner", banned: false, banReason: "", banUntil: 0, hasKey: true });
+    if (!users.find(u => u.username === 'admin')) {
+        users.push({ username: "admin", password: "123", role: "owner", banned: false });
         saveData(USER_FILE, users);
     }
 }
@@ -71,97 +57,150 @@ function requireLogin(req, res, next) {
     if (!req.session.user) return res.redirect('/login');
     const users = getData(USER_FILE);
     const u = users.find(x => x.username === req.session.user.username);
-    if (!u) { req.session.destroy(); return res.redirect('/login'); } // User bị xóa do update thì đá ra
-    if (u.banned) {
-        if (u.banUntil === -1) { req.session.destroy(); return renderMessage(res, `BỊ KHÓA VĨNH VIỄN!<br>${u.banReason}`, '/'); }
-        else if (u.banUntil > Date.now()) { let d = new Date(u.banUntil); req.session.destroy(); return renderMessage(res, `BỊ KHÓA TẠM THỜI!<br>Mở lúc: <b>${d.toLocaleString()}</b><br>${u.banReason}`, '/'); }
-        else { u.banned = false; u.banUntil = 0; saveData(USER_FILE, users); }
-    }
+    if (!u) { req.session.destroy(); return res.redirect('/login'); }
     req.session.user = u; next();
 }
-function requireOwner(req, res, next) { if (!req.session.user || req.session.user.role !== 'owner') return renderMessage(res, 'CHỈ DÀNH CHO OWNER!', '/tool'); next(); }
-function requireToolAccess(req, res, next) { const u = req.session.user; if (['owner', 'admin', 'mod'].includes(u.role)) return next(); if (u.role === 'user' && !u.hasKey) { let html = fs.readFileSync(path.join(__dirname, 'active_key.html'), 'utf-8'); return res.send(injectLogo(html)); } next(); }
-function requireStaff(req, res, next) { if (!['owner', 'admin', 'mod'].includes(req.session.user.role)) return renderMessage(res, 'Không đủ quyền!', '/tool'); next(); }
+function requireOwner(req, res, next) { if (req.session.user.role !== 'owner') return renderMessage(res, 'Cút! Chỉ dành cho Owner.', '/tool'); next(); }
 
-// ROUTER
+function requireVip(req, res, next) {
+    const u = req.session.user;
+    if (['owner', 'admin', 'mod', 'vip'].includes(u.role)) return next();
+    
+    let html = fs.readFileSync(path.join(__dirname, 'active_key.html'), 'utf-8');
+    // CHỖ NÀY LÁT EM THAY LINK YEUMONEY CỦA EM VÀO NHÉ
+    // Ví dụ: href="https://yeumoney.com/123xyz"
+    // Hiện tại anh để link trực tiếp để test
+    html = html.replace('href="https://zalo.me/sdt_cua_em"', 'href="/lay-key-tu-dong"'); 
+    res.send(injectLogo(html));
+}
+
+// --- ROUTER CHÍNH ---
 app.get('/', (req, res) => res.send(injectLogo(fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'))));
 app.get('/login', (req, res) => res.send(injectLogo(fs.readFileSync(path.join(__dirname, 'login.html'), 'utf-8'))));
 app.get('/register', (req, res) => res.send(injectLogo(fs.readFileSync(path.join(__dirname, 'register.html'), 'utf-8'))));
 app.post('/register', (req, res) => {
-    const { username, password } = req.body; const users = getData(USER_FILE);
-    if (users.find(u => u.username === username)) return renderMessage(res, 'Tên trùng!', '/register');
+    const { username, password } = req.body; let users = getData(USER_FILE);
+    if (users.find(u => u.username === username)) return renderMessage(res, 'Trùng tên!', '/register');
     let role = (username === 'admin') ? 'owner' : 'user';
-    users.push({ username, password, role, banned: false, banReason: '', banUntil: 0, hasKey: false });
-    saveData(USER_FILE, users); renderMessage(res, `Đăng ký ${username} thành công!`, '/login');
+    users.push({ username, password, role, banned: false }); saveData(USER_FILE, users);
+    renderMessage(res, `Tạo nick ${username} thành công!`, '/login');
 });
 app.post('/login', (req, res) => {
     const { username, password } = req.body; const users = getData(USER_FILE);
-    const user = users.find(u => u.username === username && u.password === password);
-    if (!user) return renderMessage(res, 'Sai thông tin (Hoặc TK đã mất do update)!', '/login'); 
-    req.session.user = user; res.redirect('/tool');
+    const u = users.find(x => x.username === username && x.password === password);
+    if (!u) return renderMessage(res, 'Sai thông tin!', '/login');
+    req.session.user = u; res.redirect('/tool');
 });
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
-app.post('/activate-key', requireLogin, (req, res) => { if (req.body.key === SYSTEM_KEY) { const users = getData(USER_FILE); const idx = users.findIndex(u => u.username === req.session.user.username); users[idx].hasKey = true; saveData(USER_FILE, users); renderMessage(res, 'ACTIVE THÀNH CÔNG!', '/tool'); } else renderMessage(res, 'Sai Key!', '/logout'); });
 
-app.get('/tool', requireLogin, requireToolAccess, (req, res) => {
+// --- HỆ THỐNG AUTO KEY (CHECK IP) ---
+
+// Trang đích của Yeumoney (Link ẩn)
+app.get('/lay-key-tu-dong', (req, res) => {
+    // 1. Lấy IP của khách
+    const userIP = req.ip || req.connection.remoteAddress;
+    
+    let keys = getData(KEY_FILE);
+    const now = Date.now();
+
+    // 2. Kiểm tra xem IP này đã có key nào còn hạn không?
+    let existingKey = keys.find(k => k.ip === userIP && k.expires > now);
+
+    let keyToShow = "";
+
+    if (existingKey) {
+        // Nếu đã có key còn hạn -> Trả lại key cũ (Không tạo mới)
+        keyToShow = existingKey.code;
+    } else {
+        // Nếu chưa có hoặc key cũ đã hết hạn -> Tạo key mới
+        const newKey = generateRandomKey();
+        const expireTime = now + (24 * 60 * 60 * 1000); // 24h
+
+        keys.push({
+            code: newKey,
+            ip: userIP, // Lưu IP để check
+            created: now,
+            expires: expireTime,
+            usedBy: null
+        });
+        saveData(KEY_FILE, keys);
+        keyToShow = newKey;
+    }
+
+    // Hiển thị Key
+    let html = fs.readFileSync(path.join(__dirname, 'key_display.html'), 'utf-8');
+    html = html.replace('{{GENERATED_KEY}}', keyToShow);
+    res.send(html);
+});
+
+// Xử lý nhập Key
+app.post('/activate-key', requireLogin, (req, res) => {
+    const { key } = req.body;
+    let keys = getData(KEY_FILE);
+    let users = getData(USER_FILE);
+    
+    // Tìm key
+    const keyData = keys.find(k => k.code === key.trim());
+
+    if (keyData) {
+        if (Date.now() > keyData.expires) return renderMessage(res, 'Key này đã hết hạn!', '/logout');
+        
+        // Kích hoạt VIP
+        const uIdx = users.findIndex(u => u.username === req.session.user.username);
+        users[uIdx].role = 'vip';
+        saveData(USER_FILE, users);
+
+        // Đánh dấu người dùng
+        keyData.usedBy = req.session.user.username;
+        saveData(KEY_FILE, keys);
+
+        renderMessage(res, `LÊN VIP THÀNH CÔNG!<br>Hạn dùng: 24 giờ.`, '/tool');
+    } else {
+        renderMessage(res, 'Key không tồn tại!', '/logout');
+    }
+});
+
+// TOOL
+app.get('/tool', requireLogin, requireVip, (req, res) => {
     let html = fs.readFileSync(path.join(__dirname, 'tool.html'), 'utf-8'); const u = req.session.user;
-    let adminLink = ''; if (u.role === 'owner') adminLink = '<a href="/owner" style="color:red; font-weight:bold; margin-right:15px">👑 OWNER PANEL</a>'; else if (u.role === 'admin' || u.role === 'mod') adminLink = '<a href="/staff" style="color:orange; margin-right:15px">🛡️ STAFF PANEL</a>';
-    let menu = VIP_LOGO + `<div style="background:#222; padding:10px 10px 10px 180px; display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #0f0;"><div style="color:#0f0">User: <b>${u.username}</b> [${u.role.toUpperCase()}]</div><div>${adminLink}<a href="/profile" style="color:white; margin-right:15px">Hồ sơ</a><a href="/logout" style="color:#888">Thoát</a></div></div>`;
+    let adminBtn = (u.role === 'owner') ? '<a href="/owner" style="color:red;font-weight:bold;margin-right:10px;">👑 OWNER PANEL</a>' : '';
+    let menu = VIP_LOGO + `<div style="background:#222;padding:10px 10px 10px 180px;color:#0f0;border-bottom:1px solid lime;">Hello <b>${u.username}</b> [${u.role.toUpperCase()}] | ${adminBtn} <a href="/logout" style="color:white;">Thoát</a></div>`;
     res.send(html.replace('<body>', '<body>' + menu));
 });
 
 // OWNER PANEL
 app.get('/owner', requireLogin, requireOwner, (req, res) => {
-    const reqs = getData(REQ_FILE); const users = getData(USER_FILE); const logs = getData(LOG_FILE);
+    const users = getData(USER_FILE); const keys = getData(KEY_FILE);
     let html = fs.readFileSync(path.join(__dirname, 'owner.html'), 'utf-8');
-    let logRows = logs.length===0 ? '<div style="padding:10px">Sổ Nam Tào trống...</div>' : logs.map(l => `<div class="log-item"><span class="log-time">[${l.time}]</span><span class="log-action act-${l.action.toLowerCase()}">${l.action}</span>: ${l.target} - ${l.detail}</div>`).join('');
-    let reqRows = reqs.length===0 ? '<p style="color:#888">Hộp thư trống.</p>' : reqs.map(r => `<div style="border:1px solid #333; padding:10px; margin-bottom:5px;"><b style="color:orange">${r.reporter}</b> báo cáo <b style="color:red">${r.target}</b>: <i>"${r.reason}"</i></div>`).join('');
     
-    let userRows = users.map(u => {
-        if (u.role === 'owner') return '';
-        let roleColor = u.role === 'admin' ? 'role-admin' : (u.role === 'mod' ? 'role-mod' : 'role-user');
-        let statusHtml = u.banned ? `<span style="color:red">BỊ KHÓA ${u.banUntil === -1 ? '(Vĩnh viễn)' : '(Có hạn)'}</span>` : `<span style="color:#0f0">Hoạt động</span>`;
-        let actionHtml = '';
-        if (u.banned) { actionHtml = `<form action="/owner/direct-action" method="POST" style="display:inline"><input type="hidden" name="targetUser" value="${u.username}"><button type="submit" name="actionType" value="unban" class="btn-open">🔓 MỞ</button></form>`; } 
-        else { actionHtml = `<form action="/owner/direct-action" method="POST" style="display:inline"><input type="hidden" name="targetUser" value="${u.username}"><select name="banDuration" style="width:100px"><option value="1m">1 Phút (Test)</option><option value="5m">5 Phút</option><option value="30m">30 Phút</option><option value="1h">1 Giờ</option><option value="12h">12 Giờ</option><option value="24h">1 Ngày</option><option value="7d">7 Ngày</option><option value="forever">Vĩnh viễn</option></select><button type="submit" name="actionType" value="ban" class="btn-kill">TRẢM</button></form>`; }
-        actionHtml += `<form action="/owner/direct-action" method="POST" style="display:inline; margin-left:5px;"><input type="hidden" name="targetUser" value="${u.username}"><button type="submit" name="actionType" value="reset_pass" class="btn-reset">♻ Pass 123</button></form>`;
-        return `<tr><td>${u.username}</td><td><span class="role-tag ${roleColor}">${u.role.toUpperCase()}</span></td><td>${statusHtml}</td><td><form action="/owner/set-role" method="POST" style="display:flex; gap:5px;"><input type="hidden" name="targetUser" value="${u.username}"><select name="newRole"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="mod" ${u.role==='mod'?'selected':''}>Mod</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select><button type="submit" class="btn-save">Lưu</button></form></td><td>${actionHtml}</td></tr>`;
+    // List Key có hiện IP
+    let keyRows = keys.map(k => {
+        let isExpired = Date.now() > k.expires;
+        let timeLeft = Math.round((k.expires - Date.now()) / 1000 / 60);
+        return `
+            <tr>
+                <td style="color:yellow; font-weight:bold;">${k.code}</td>
+                <td>${k.ip || 'N/A'}</td> <td style="color:${isExpired?'red':'lime'}">${isExpired ? 'Hết hạn' : timeLeft + 'p'}</td>
+                <td>${k.usedBy || '-'}</td>
+                <td><form action="/owner/delete-key" method="POST"><input type="hidden" name="keyCode" value="${k.code}"><button style="background:red;color:white;border:none;">Xóa</button></form></td>
+            </tr>`;
     }).join('');
-    html = injectLogo(html); res.send(html.replace('{{COUNT}}', reqs.length).replace('{{REQUEST_LIST}}', reqRows).replace('{{USER_MANAGEMENT_LIST}}', userRows).replace('{{LOG_LIST}}', logRows));
+
+    let uHtml = users.map(u => {
+        if(u.role === 'owner') return '';
+        return `<tr><td>${u.username}</td><td>${u.role}</td><td style="color:${u.banned?'red':'lime'}">${u.banned?'BLOCK':'OK'}</td><td>Action...</td></tr>`;
+    }).join('');
+
+    html = injectLogo(html);
+    html = html.replace('{{KEY_COUNT}}', keys.length);
+    html = html.replace('{{KEY_LIST}}', keyRows);
+    html = html.replace('{{USER_LOGS}}', ''); html = html.replace('{{ADMIN_LOGS}}', ''); html = html.replace('{{USER_LIST}}', uHtml);
+    res.send(html);
 });
 
-// XUẤT & XÓA LOG MỚI
-app.get('/owner/export-logs', requireLogin, requireOwner, (req, res) => {
-    res.download(LOG_FILE, 'death_note_logs.json');
-});
-app.post('/owner/clear-logs', requireLogin, requireOwner, (req, res) => {
-    saveData(LOG_FILE, []);
-    res.redirect('/owner');
-});
+// Các action khác (Delete key, clear keys...)
+app.post('/owner/delete-key', requireLogin, requireOwner, (req, res) => { let keys = getData(KEY_FILE); keys = keys.filter(k => k.code !== req.body.keyCode); saveData(KEY_FILE, keys); res.redirect('/owner'); });
+app.post('/owner/clear-keys', requireLogin, requireOwner, (req, res) => { saveData(KEY_FILE, []); res.redirect('/owner'); });
+app.post('/upload', requireLogin, requireVip, upload.single('video'), (req, res) => { if(!req.file) return renderMessage(res, 'Chưa chọn file!', '/tool'); const input = req.file.path; const output = path.join(__dirname, `video_${Date.now()}.3gp`); const cmd = `"${ffmpegPath}" -i "${input}" -vcodec mpeg4 -acodec libopencore_amrnb -ac 1 -ar 8000 -s 176x144 -r 15 -y "${output}"`; exec(cmd, (e) => { if(e) return renderMessage(res, 'Lỗi: ' + e.message, '/tool'); res.download(output, () => fs.unlinkSync(input)); }); });
 
-// ACTION CŨ
-app.post('/owner/direct-action', requireLogin, requireOwner, (req, res) => {
-    const { targetUser, actionType, banDuration } = req.body;
-    let users = getData(USER_FILE); const idx = users.findIndex(u => u.username === targetUser);
-    if (idx === -1) return renderMessage(res, 'User không tồn tại!', '/owner');
-    if (actionType === 'ban') {
-        users[idx].banned = true; users[idx].banReason = "Trảm bởi Owner"; let ms = 0; let logText = "";
-        switch(banDuration) { case '1m': ms=60000; logText="1 phút"; break; case '5m': ms=300000; logText="5 phút"; break; case '30m': ms=1800000; logText="30 phút"; break; case '1h': ms=3600000; logText="1 giờ"; break; case '12h': ms=43200000; logText="12 giờ"; break; case '24h': ms=86400000; logText="1 ngày"; break; case '7d': ms=604800000; logText="7 ngày"; break; case 'forever': default: ms=-1; logText="Vĩnh viễn"; break; }
-        users[idx].banUntil = (ms === -1) ? -1 : (Date.now() + ms); addLog("BAN", targetUser, `Khóa ${logText}`);
-    } else if (actionType === 'unban') { users[idx].banned = false; users[idx].banUntil = 0; addLog("UNBAN", targetUser, "Đã ân xá"); } 
-    else if (actionType === 'reset_pass') { users[idx].password = '123456'; addLog("RESET", targetUser, "Reset pass về 123456"); saveData(USER_FILE, users); return renderMessage(res, `Đã reset pass của <b>${targetUser}</b>!`, '/owner'); }
-    saveData(USER_FILE, users); res.redirect('/owner');
-});
-app.post('/owner/set-role', requireLogin, requireOwner, (req, res) => {
-    const { targetUser, newRole } = req.body; let users = getData(USER_FILE); const uIdx = users.findIndex(u => u.username === targetUser);
-    if (uIdx !== -1) { users[uIdx].role = newRole; saveData(USER_FILE, users); addLog("ROLE", targetUser, `Thăng/Giáng thành ${newRole}`); renderMessage(res, `Đã set role <b>${targetUser}</b> thành <b>${newRole}</b>!`, '/owner'); } else renderMessage(res, 'Error', '/owner');
-});
-
-// CÁC ROUTER KHÁC GIỮ NGUYÊN (Staff, Upload, Profile...)
-app.get('/staff', requireLogin, requireStaff, (req, res) => { const users = getData(USER_FILE); let html = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf-8'); let rows = users.map(u => `<tr><td>${u.username}</td><td>${u.role}</td><td style="color:${u.banned?'red':'green'}">${u.banned?'Bị Ban':'Sạch'}</td><td>${u.role!=='owner'?`<form action="/report" method="POST" style="display:inline;"><input type="hidden" name="target" value="${u.username}"><input type="text" name="reason" placeholder="Lý do..." required style="width:100px;"><button class="btn-report">BÁO CÁO</button></form>`:'<span>Bất tử</span>'}</td></tr>`).join(''); html = injectLogo(html); res.send(html.replace('{{USER_LIST}}', rows)); });
-app.post('/report', requireLogin, requireStaff, (req, res) => { const reqs = getData(REQ_FILE); reqs.push({ id: Date.now(), reporter: req.session.user.username, role: req.session.user.role, target: req.body.target, reason: req.body.reason, time: new Date().toLocaleString() }); saveData(REQ_FILE, reqs); renderMessage(res, 'Đã gửi sớ lên Owner!', '/staff'); });
-app.get('/profile', requireLogin, (req, res) => { let html = fs.readFileSync(path.join(__dirname, 'profile.html'), 'utf-8'); const u = req.session.user; html = injectLogo(html); res.send(html.replace('{{USERNAME}}', u.username).replace('{{ROLE}}', u.role).replace('{{STATUS}}', u.banned ? 'BỊ BAN' : (u.hasKey ? 'VIP MEMBER' : 'Chưa Active'))); });
-app.post('/change-password', requireLogin, (req, res) => { const { oldPass, newPass } = req.body; let users = getData(USER_FILE); const idx = users.findIndex(u => u.username === req.session.user.username); if (users[idx].password !== oldPass) return renderMessage(res, 'Pass cũ sai!', '/profile'); users[idx].password = newPass; saveData(USER_FILE, users); renderMessage(res, 'Đổi pass thành công!', '/logout'); });
-app.post('/upload', requireLogin, requireToolAccess, upload.single('video'), (req, res) => { if (!req.file) return renderMessage(res, 'Chưa chọn file!', '/tool'); const inputPath = req.file.path; const outputPath = path.join(__dirname, `video_${Date.now()}.3gp`); const command = `"${ffmpegPath}" -i "${inputPath}" -vcodec mpeg4 -acodec libopencore_amrnb -ac 1 -ar 8000 -s 176x144 -r 15 -y "${outputPath}"`; exec(command, (e) => { if (e) return renderMessage(res, 'Lỗi: ' + e.message, '/tool'); res.download(outputPath, () => fs.unlinkSync(inputPath)); }); });
-
-app.listen(3000, () => console.log("System LOG EXPORT running..."));
+app.listen(3000, () => console.log("System AUTO KEY & IP CHECK running..."));
