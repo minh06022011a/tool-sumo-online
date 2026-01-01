@@ -9,7 +9,7 @@ const ffmpegPath = require('ffmpeg-static');
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
-const SECRET_SESSION = "minh_boss_pro_max_final";
+const SECRET_SESSION = "minh_boss_pro_max_final_v2";
 
 // LOGO RGB
 const VIP_LOGO = `
@@ -27,8 +27,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
 const USER_FILE = path.join(__dirname, 'users.json');
-const LOG_FILE = path.join(__dirname, 'logs.json'); // Admin log
-const USER_LOG_FILE = path.join(__dirname, 'user_logs.json'); // User log
+const LOG_FILE = path.join(__dirname, 'logs.json'); 
+const USER_LOG_FILE = path.join(__dirname, 'user_logs.json'); 
 const KEY_FILE = path.join(__dirname, 'active_keys.json');
 
 function getData(file) { if (!fs.existsSync(file)) fs.writeFileSync(file, '[]'); try { return JSON.parse(fs.readFileSync(file)); } catch { return []; } }
@@ -36,18 +36,15 @@ function saveData(file, data) { fs.writeFileSync(file, JSON.stringify(data, null
 function injectLogo(html) { return html.replace(/(<body[^>]*>)/i, '$1' + VIP_LOGO); }
 function renderMessage(res, msg, link) { let tpl = fs.readFileSync(path.join(__dirname, 'message.html'), 'utf-8'); res.send(injectLogo(tpl.replace('REPLACE_MESSAGE', msg).replace('REPLACE_LINK', link))); }
 
-// GHI LOG HOẠT ĐỘNG
 function addUserLog(username, action) {
     let logs = getData(USER_LOG_FILE);
     logs.unshift({ time: new Date().toLocaleString(), user: username, action: action });
-    if(logs.length > 100) logs.pop(); 
-    saveData(USER_LOG_FILE, logs);
+    if(logs.length > 100) logs.pop(); saveData(USER_LOG_FILE, logs);
 }
 function addAdminLog(action, target, detail) {
     let logs = getData(LOG_FILE);
     logs.unshift({ time: new Date().toLocaleString(), action, target, detail });
-    if(logs.length > 50) logs.pop(); 
-    saveData(LOG_FILE, logs);
+    if(logs.length > 50) logs.pop(); saveData(LOG_FILE, logs);
 }
 
 function generateRandomKey() {
@@ -83,7 +80,6 @@ function requireVip(req, res, next) {
     if (['owner', 'admin', 'mod', 'vip'].includes(u.role)) return next();
     
     let html = fs.readFileSync(path.join(__dirname, 'active_key.html'), 'utf-8');
-    // Thay link yeumoney của em vào đây
     html = html.replace('href="/lay-key-tu-dong"', 'href="/lay-key-tu-dong"'); 
     res.send(injectLogo(html));
 }
@@ -107,7 +103,7 @@ app.post('/login', (req, res) => {
     const u = users.find(x => x.username === username && x.password === password);
     if (!u) return renderMessage(res, 'Sai thông tin!', '/login');
     req.session.user = u; 
-    addUserLog(username, "Đăng nhập vào hệ thống");
+    addUserLog(username, "Đăng nhập");
     res.redirect('/tool');
 });
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
@@ -120,9 +116,8 @@ app.get('/lay-key-tu-dong', (req, res) => {
     let existingKey = keys.find(k => k.ip === userIP && k.expires > now);
     let keyToShow = "";
 
-    if (existingKey) {
-        keyToShow = existingKey.code;
-    } else {
+    if (existingKey) keyToShow = existingKey.code;
+    else {
         const newKey = generateRandomKey();
         keys.push({ code: newKey, ip: userIP, created: now, expires: now + 86400000, usedBy: null });
         saveData(KEY_FILE, keys);
@@ -157,62 +152,52 @@ app.post('/activate-key', requireLogin, (req, res) => {
     }
 });
 
+// --- ĐÂY LÀ ĐOẠN CODE ANH QUÊN LÚC NÃY NÈ (SORRY BOSS!) ---
+app.get('/tool', requireLogin, requireVip, (req, res) => {
+    let html = fs.readFileSync(path.join(__dirname, 'tool.html'), 'utf-8');
+    const u = req.session.user;
+    let adminBtn = (u.role === 'owner') ? '<a href="/owner" style="color:red;font-weight:bold;margin-right:10px;">👑 OWNER PANEL</a>' : '';
+    let menu = VIP_LOGO + `<div style="background:#222;padding:10px 10px 10px 180px;color:#0f0;border-bottom:1px solid lime;">Hello <b>${u.username}</b> [${u.role.toUpperCase()}] | ${adminBtn} <a href="/logout" style="color:white;">Thoát</a></div>`;
+    res.send(html.replace('<body>', '<body>' + menu));
+});
+// ------------------------------------------------------------
+
 app.post('/upload', requireLogin, requireVip, upload.single('video'), (req, res) => {
     if(!req.file) return renderMessage(res, 'Chưa chọn file!', '/tool');
-    addUserLog(req.session.user.username, "Upload video để convert");
-    
+    addUserLog(req.session.user.username, "Upload video");
     const input = req.file.path; const output = path.join(__dirname, `video_${Date.now()}.3gp`);
     const cmd = `"${ffmpegPath}" -i "${input}" -vcodec mpeg4 -acodec libopencore_amrnb -ac 1 -ar 8000 -s 176x144 -r 15 -y "${output}"`;
     exec(cmd, (e) => { if(e) return renderMessage(res, 'Lỗi: ' + e.message, '/tool'); res.download(output, () => fs.unlinkSync(input)); });
 });
 
-// OWNER PANEL
 app.get('/owner', requireLogin, requireOwner, (req, res) => {
     const users = getData(USER_FILE); const keys = getData(KEY_FILE);
-    const userLogs = getData(USER_LOG_FILE); const adminLogs = getData(LOG_FILE); // LẤY DỮ LIỆU LOG
+    const userLogs = getData(USER_LOG_FILE); const adminLogs = getData(LOG_FILE);
     
     let html = fs.readFileSync(path.join(__dirname, 'owner.html'), 'utf-8');
     
-    // Render Key List
     let keyRows = keys.map(k => `<tr><td style="color:yellow;font-weight:bold;">${k.code}</td><td>${k.ip||'N/A'}</td><td style="color:${Date.now()>k.expires?'red':'lime'}">${Date.now()>k.expires?'Hết':'Còn'}</td><td>${k.usedBy||'-'}</td><td><form action="/owner/delete-key" method="POST"><input type="hidden" name="keyCode" value="${k.code}"><button style="background:red;color:white;border:none;">Xóa</button></form></td></tr>`).join('');
-    
-    // Render User Logs (HIỆN LẠI LOG)
     let ulHtml = userLogs.map(l => `<div class="log-row"><span class="time">[${l.time}]</span> <span class="user">${l.user}</span>: <span class="action">${l.action}</span></div>`).join('');
-    
-    // Render Admin Logs
     let alHtml = adminLogs.map(l => `<div class="log-row"><span class="time">[${l.time}]</span> <b style="color:red">${l.action}</b> ${l.target} (${l.detail})</div>`).join('');
-
     let uHtml = users.map(u => { if(u.role==='owner')return''; return `<tr><td>${u.username}</td><td>${u.role}</td><td style="color:${u.banned?'red':'lime'}">${u.banned?'BLOCK':'OK'}</td><td>Action...</td></tr>`; }).join('');
     
     html = injectLogo(html);
-    html = html.replace('{{KEY_COUNT}}', keys.length);
-    html = html.replace('{{KEY_LIST}}', keyRows);
-    html = html.replace('{{USER_LOGS}}', ulHtml || 'Chưa có hoạt động nào'); // ĐÃ BẬT LẠI
-    html = html.replace('{{ADMIN_LOGS}}', alHtml || 'Chưa có trảm ai');
-    html = html.replace('{{USER_LIST}}', uHtml);
+    html = html.replace('{{KEY_COUNT}}', keys.length); html = html.replace('{{KEY_LIST}}', keyRows);
+    html = html.replace('{{USER_LOGS}}', ulHtml || 'Chưa có hoạt động'); html = html.replace('{{ADMIN_LOGS}}', alHtml || 'Chưa có trảm'); html = html.replace('{{USER_LIST}}', uHtml);
     res.send(html);
 });
 
-// EXPORT LOGS RA FILE .TXT (ĐÃ SỬA EXTENSION)
 app.get('/owner/export-user-logs', requireLogin, requireOwner, (req, res) => {
     const logs = getData(USER_LOG_FILE);
-    // Chuyển JSON thành Text dễ đọc
     const content = logs.map(l => `[${l.time}] User: ${l.user} | Action: ${l.action}`).join('\n');
-    const filePath = path.join(__dirname, 'UserLogs.txt');
-    fs.writeFileSync(filePath, content);
-    res.download(filePath);
+    const filePath = path.join(__dirname, 'UserLogs.txt'); fs.writeFileSync(filePath, content); res.download(filePath);
 });
-
 app.get('/owner/export-admin-logs', requireLogin, requireOwner, (req, res) => {
     const logs = getData(LOG_FILE);
     const content = logs.map(l => `[${l.time}] ACTION: ${l.action} | Target: ${l.target} | Detail: ${l.detail}`).join('\n');
-    const filePath = path.join(__dirname, 'DeathNote.txt');
-    fs.writeFileSync(filePath, content);
-    res.download(filePath);
+    const filePath = path.join(__dirname, 'DeathNote.txt'); fs.writeFileSync(filePath, content); res.download(filePath);
 });
-
-// Các Action khác
 app.post('/owner/delete-key', requireLogin, requireOwner, (req, res) => { let keys = getData(KEY_FILE); keys = keys.filter(k => k.code !== req.body.keyCode); saveData(KEY_FILE, keys); res.redirect('/owner'); });
 app.post('/owner/clear-keys', requireLogin, requireOwner, (req, res) => { saveData(KEY_FILE, []); res.redirect('/owner'); });
 
-app.listen(3000, () => console.log("System FULL LOGS & EXPORT TXT running..."));
+app.listen(3000, () => console.log("System FIXED & READY!"));
