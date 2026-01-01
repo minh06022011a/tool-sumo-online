@@ -4,9 +4,24 @@
     <meta charset="UTF-8">
     <title>OWNER DASHBOARD - QUYỀN LỰC TỐI CAO</title>
     <style>
-        body { background: #000; color: #d4af37; font-family: 'Segoe UI', sans-serif; padding: 20px; }
-        .header { border-bottom: 2px solid #d4af37; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-        h1 { margin: 0; text-transform: uppercase; text-shadow: 0 0 10px #d4af37; }
+        /* SỬA LẠI DÒNG NÀY: Thêm padding-top 80px để né cái Logo ra */
+        body { 
+            background: #000; 
+            color: #d4af37; 
+            font-family: 'Segoe UI', sans-serif; 
+            padding: 80px 20px 20px 20px; 
+        }
+
+        .header { 
+            border-bottom: 2px solid #d4af37; 
+            padding-bottom: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        
+        /* Đẩy tiêu đề sang phải một chút cho cân đối */
+        h1 { margin: 0; text-transform: uppercase; text-shadow: 0 0 10px #d4af37; padding-left: 10px; }
         
         .section-title { color: #fff; background: #222; padding: 10px; margin-top: 40px; border-left: 5px solid #d4af37; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; }
         
@@ -27,6 +42,8 @@
         .btn-kill { background: red; color: white; }
         .btn-reset { background: orange; color: black; }
         .btn-open { background: cyan; color: black; }
+        .btn-back { border: 1px solid white; padding: 8px 20px; color: white; text-decoration: none; font-weight: bold; transition: 0.3s; }
+        .btn-back:hover { background: white; color: black; }
 
         .role-tag { padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 11px; text-transform: uppercase; }
         .role-admin { background: yellow; color: black; } .role-mod { background: orange; color: black; } .role-user { background: #333; color: white; }
@@ -35,7 +52,7 @@
 <body>
     <div class="header">
         <h1>👑 OWNER CONTROL CENTER</h1>
-        <a href="/tool" style="color: white; text-decoration: none; border: 1px solid white; padding: 5px 15px;">⬅ Về Tool</a>
+        <a href="/tool" class="btn-back">⬅ Về Tool</a>
     </div>
 
     <h2 class="section-title">💀 DEATH NOTE (Nhật Ký Hành Quyết)</h2>
