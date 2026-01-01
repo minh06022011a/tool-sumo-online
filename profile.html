@@ -4,18 +4,66 @@
     <meta charset="UTF-8">
     <title>Hồ sơ của tôi</title>
     <style>
-        body { background: #111; color: #0f0; font-family: monospace; display: flex; justify-content: center; padding-top: 50px; }
-        .box { border: 1px solid #0f0; padding: 30px; width: 400px; background: #222; border-radius: 10px; }
-        h2 { text-align: center; border-bottom: 1px dashed #555; padding-bottom: 10px; }
-        .info { margin-bottom: 20px; }
-        input { width: 100%; padding: 10px; margin: 5px 0; background: black; border: 1px solid #555; color: white; }
-        button { width: 100%; padding: 10px; background: #0f0; color: black; font-weight: bold; border: none; cursor: pointer; margin-top: 10px; }
-        .back-btn { background: #555; color: white; margin-top: 5px; }
+        body { background: #050505; color: #0f0; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        
+        /* Box to đùng */
+        .box { 
+            border: 2px solid #0f0; 
+            padding: 40px; 
+            width: 500px; /* Rộng hơn */
+            background: #111; 
+            border-radius: 15px; 
+            box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
+        }
+
+        h2 { text-align: center; border-bottom: 2px dashed #333; padding-bottom: 20px; font-size: 28px; margin-top: 0; }
+        
+        /* Chữ thông tin to hơn */
+        .info p { font-size: 20px; margin: 15px 0; color: white; }
+        .info b { color: #0f0; }
+
+        h3 { color: yellow; font-size: 22px; margin-top: 30px; }
+
+        /* Ô nhập liệu to */
+        input { 
+            width: 100%; 
+            padding: 15px; 
+            margin: 10px 0; 
+            background: black; 
+            border: 1px solid #555; 
+            color: white; 
+            font-size: 18px; /* Chữ to khi gõ */
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        /* Nút bấm to */
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background: #0f0; 
+            color: black; 
+            font-weight: bold; 
+            font-size: 20px; 
+            border: none; 
+            cursor: pointer; 
+            margin-top: 15px; 
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+        button:hover { background: white; box-shadow: 0 0 15px white; }
+
+        .back-btn { 
+            background: #333; 
+            color: white; 
+            margin-top: 10px; 
+        }
+        .back-btn:hover { background: #555; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h2>👤 HỒ SƠ: {{USERNAME}}</h2>
+        <h2>👤 HỒ SƠ CÁ NHÂN: {{USERNAME}}</h2>
         <div class="info">
             <p>Vai trò: <b>{{ROLE}}</b></p>
             <p>Trạng thái: {{STATUS}}</p>
@@ -23,12 +71,12 @@
 
         <h3>🔐 Đổi Mật Khẩu</h3>
         <form action="/change-password" method="POST">
-            <input type="password" name="oldPass" placeholder="Mật khẩu cũ" required>
-            <input type="password" name="newPass" placeholder="Mật khẩu mới" required>
-            <button type="submit">CẬP NHẬT MẬT KHẨU</button>
+            <input type="password" name="oldPass" placeholder="Nhập mật khẩu cũ..." required>
+            <input type="password" name="newPass" placeholder="Nhập mật khẩu mới..." required>
+            <button type="submit">CẬP NHẬT NGAY</button>
         </form>
 
-        <a href="/tool"><button class="back-btn">⬅ Quay lại Tool</button></a>
+        <a href="/tool"><button class="back-btn">⬅ QUAY LẠI TOOL</button></a>
     </div>
 </body>
 </html>
