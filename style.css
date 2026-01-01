@@ -1,0 +1,28 @@
+body {
+    background-color: #222; /* Màu nền đen xám */
+    color: white; /* Chữ màu trắng */
+    font-family: Arial, sans-serif; /* Phông chữ dễ đọc */
+    text-align: center; /* Căn giữa tất cả */
+}
+
+h1 {
+    color: #ff9900; /* Tiêu đề màu cam */
+    margin-top: 100px;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 20px;
+    background-color: lime; /* Nút màu xanh lá */
+    border: none;
+    border-radius: 10px; /* Bo tròn góc */
+    cursor: pointer;
+    .anh-dai-dien {
+    width: 150px;       /* Thu nhỏ ảnh lại còn 150px */
+    height: 150px;      /* Chiều cao bằng chiều rộng cho vuông */
+    object-fit: cover;  /* Cắt ảnh cho vừa khung, không bị méo */
+    border-radius: 50%; /* Bo tròn 50% -> Biến thành hình tròn xoe */
+    border: 5px solid white; /* Viền trắng dày 5px */
+    margin-top: 20px;
+}
+}

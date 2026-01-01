@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Convert Video V5</title>
+    <style>
+        body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #222; padding: 30px; border-radius: 10px; border: 1px solid #444; }
+        h1 { color: #0f0; text-align: center; margin-top: 0; }
+        
+        .group { margin-bottom: 20px; border-bottom: 1px dashed #555; padding-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #ccc; }
+        input[type="file"] { background: #333; color: white; padding: 10px; width: 100%; border: 1px solid #555; }
+        input[type="text"], input[type="number"] { width: 100%; padding: 10px; background: #000; border: 1px solid #0f0; color: white; box-sizing: border-box; }
+        
+        button { width: 100%; padding: 15px; background: #0f0; color: black; font-weight: bold; font-size: 18px; border: none; cursor: pointer; margin-top: 10px; }
+        button:hover { background: white; }
+        
+        .note { font-size: 12px; color: #888; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🛠️ TOOL SUMO T2 ONLINE</h1>
+        <p style="text-align:center; color: #888;">Xin chào, <b>Admin</b> | <a href="/" style="color:red">Đăng xuất</a></p>
+
+        <form action="/upload" method="POST" enctype="multipart/form-data">
+
+            <div class="group">
+                <label>1. Chọn Video MP4 cần xử lý:</label>
+                <input type="file" name="video" accept=".mp4" required>
+            </div>
+
+            <div class="group">
+                <label>2. Cắt Video (Tùy chọn):</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" name="startTime" placeholder="Bắt đầu (VD: 00:00:10)">
+                    <input type="text" name="endTime" placeholder="Kết thúc (VD: 00:05:00)">
+                </div>
+                <div class="note">* Để trống nếu không muốn cắt.</div>
+            </div>
+
+            <div class="group">
+                <label>3. Chia nhỏ file (Tùy chọn):</label>
+                <input type="number" name="splitTime" placeholder="Nhập số phút mỗi phần (VD: 15)">
+                <div class="note">* Để trống nếu không muốn chia nhỏ.</div>
+            </div>
+
+            <button type="submit">🚀 BẮT ĐẦU XỬ LÝ</button>
+        </form>
+    </div>
+
+</body>
+</html>
