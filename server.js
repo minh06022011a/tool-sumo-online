@@ -3,7 +3,7 @@ const multer = require('multer'); // Thư viện nhận file upload
 const { exec } = require('child_process'); // Thư viện chạy lệnh CMD
 const path = require('path');
 const fs = require('fs');
-
+const ffmpegPath = require('ffmpeg-static');
 const app = express();
 
 // Cấu hình nơi lưu file upload tạm thời
@@ -45,7 +45,8 @@ app.post('/upload', upload.single('video'), (req, res) => {
     // Nếu em cài ffmpeg vào máy rồi thì chỉ cần ghi "ffmpeg" là được.
     
     // Lệnh Convert chuẩn cho Sumo T2 (Code gốc của em)
-    const command = `ffmpeg -i "${inputPath}" -vcodec mpeg4 -acodec libopencore_amrnb -ac 1 -ar 8000 -s 176x144 -r 15 -y "${outputPath}"`;
+   // Dùng biến ffmpegPath thay vì chữ "ffmpeg" cứng
+const command = `"${ffmpegPath}" -i "${inputPath}" -vcodec mpeg4 -acodec libopencore_amrnb -ac 1 -ar 8000 -s 176x144 -r 15 -y "${outputPath}"`;
 
     console.log("Đang xử lý: " + command);
 
