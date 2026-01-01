@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kích hoạt bản quyền</title>
+    <style>
+        body { background: #050505; color: red; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; text-align: center; }
+        .box { border: 2px solid red; padding: 40px; background: #111; border-radius: 10px; width: 400px; }
+        input { width: 100%; padding: 15px; margin: 15px 0; background: black; border: 1px solid red; color: white; text-align: center; font-size: 20px; }
+        button { width: 100%; padding: 15px; background: red; color: white; font-weight: bold; border: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>⛔ TRUY CẬP BỊ TỪ CHỐI</h1>
+        <p>Tài khoản thường cần có <b>KEY BẢN QUYỀN</b> để sử dụng Tool.</p>
+        <p>Liên hệ <b>Owner Minh</b> để mua key.</p>
+        <form action="/activate-key" method="POST">
+            <input type="text" name="key" placeholder="NHẬP KEY TẠI ĐÂY..." required>
+            <button type="submit">KÍCH HOẠT NGAY</button>
+        </form>
+        <br>
+        <a href="/logout" style="color: white;">Đăng xuất</a>
+    </div>
+</body>
+</html>

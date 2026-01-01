@@ -2,41 +2,27 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>ADMIN CONTROL PANEL</title>
+    <title>Staff Panel</title>
     <style>
-        body { background: #000; color: #0f0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; }
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0f0; padding-bottom: 20px; margin-bottom: 30px; }
-        h1 { margin: 0; font-size: 32px; text-transform: uppercase; text-shadow: 0 0 10px #0f0; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 18px; }
-        th, td { border: 1px solid #333; padding: 15px; text-align: left; }
-        th { background: #111; color: yellow; font-size: 20px; }
-        tr:nth-child(even) { background: #0a0a0a; }
-        tr:hover { background: #111; }
-        
-        .btn { padding: 8px 15px; text-decoration: none; color: black; font-size: 14px; font-weight: bold; border-radius: 4px; margin-right: 5px; display: inline-block; }
-        .ban-btn { background: #ff4444; color: white; }
-        .reset-btn { background: orange; }
-        .back-btn { background: #333; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #333; padding: 10px; text-align: left; }
+        th { background: #222; color: #0f0; }
+        .btn-report { background: orange; color: black; padding: 5px 10px; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🛡️ TRUNG TÂM ĐIỀU HÀNH ADMIN</h1>
-        <div>
-            <a href="/tool" class="back-btn">⬅ Quay lại Tool</a>
-        </div>
-    </div>
-
-    <h2 style="color: white;">Danh sách thành viên (Tổng: {{TOTAL_USERS}})</h2>
+    <h1>STAFF PANEL (Admin/Mod)</h1>
+    <a href="/tool" style="color: #0f0;">Quay lại Tool</a>
+    <p>Chức năng: Xem danh sách & Gửi báo cáo vi phạm cho Owner.</p>
     
     <table>
         <thead>
             <tr>
-                <th>Tên tài khoản</th>
-                <th>Chức vụ</th>
+                <th>User</th>
+                <th>Role</th>
                 <th>Trạng thái</th>
-                <th>Quyền lực</th>
+                <th>Hành động</th>
             </tr>
         </thead>
         <tbody>

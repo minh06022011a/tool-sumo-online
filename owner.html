@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>OWNER DASHBOARD - QUYỀN LỰC TỐI CAO</title>
+    <style>
+        body { background: #000; color: #d4af37; font-family: sans-serif; padding: 20px; } /* Màu vàng kim loại */
+        .header { border-bottom: 2px solid #d4af37; padding-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        h1 { margin: 0; text-transform: uppercase; }
+        .request-box { border: 1px solid #333; background: #111; padding: 20px; margin-bottom: 20px; border-radius: 5px; }
+        .actions { margin-top: 10px; display: flex; gap: 10px; }
+        select { padding: 10px; background: #222; color: white; border: 1px solid #555; }
+        button { padding: 10px 20px; cursor: pointer; font-weight: bold; border: none; }
+        .btn-approve { background: red; color: white; }
+        .btn-delete { background: #333; color: white; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👑 OWNER CONTROL CENTER</h1>
+        <a href="/tool" style="color: white; text-decoration: none;">[Về Tool]</a>
+    </div>
+
+    <h2>📩 HỘP THƯ BÁO CÁO ({{COUNT}} thư mới)</h2>
+    
+    {{REQUEST_LIST}} </body>
+</html>
