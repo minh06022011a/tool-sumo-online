@@ -7,26 +7,44 @@
     <style>
         body { background: #050505; color: #0f0; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; padding: 20px; }
         .box { border: 2px solid #0f0; padding: 30px; border-radius: 15px; background: #111; max-width: 500px; width: 100%; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
-        h1 { color: yellow; margin-top: 0; font-size: 24px; }
-        .key-text { 
-            background: #000; color: white; padding: 20px; font-size: 28px; font-weight: bold; 
-            border: 1px dashed #555; margin: 20px 0; display: block; letter-spacing: 3px; word-break: break-all;
+        h1 { color: yellow; margin-top: 0; font-size: 22px; }
+        
+        .key-box { 
+            background: #000; color: white; padding: 20px; font-size: 26px; font-weight: bold; 
+            border: 2px dashed #0f0; margin: 20px 0; display: block; letter-spacing: 2px; word-break: break-all;
+            cursor: pointer;
         }
-        .note { color: #888; font-size: 13px; margin-bottom: 20px; }
-        .warning { color: red; font-size: 12px; margin-top: 10px; font-style: italic; }
-        .btn { background: #0f0; color: black; text-decoration: none; padding: 15px 30px; font-weight: bold; border-radius: 5px; display: inline-block; font-size: 16px; }
+        
+        .btn { background: #0f0; color: black; padding: 15px 30px; font-weight: bold; border-radius: 5px; border: none; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn:hover { background: white; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h1>💎 KEY VIP TỰ ĐỘNG</h1>
-        <p>Hệ thống đã tạo riêng cho bạn 1 Key.</p>
+        <h1>💎 KEY CỦA RIÊNG BẠN</h1>
+        <p>Hệ thống đã tạo 1 Key duy nhất cho IP của bạn.</p>
         
-        <div class="key-text">{{GENERATED_KEY}}</div>
+        <div class="key-box" id="myKey" onclick="copyKey()">{{GENERATED_KEY}}</div>
         
-        <a href="/tool" class="btn">COPY & NHẬP KEY NGAY</a>
+        <button class="btn" onclick="copyKey()">📋 COPY & NHẬP KEY</button>
         
-        <p class="warning">⚠️ Lưu ý: Mỗi thiết bị/IP chỉ nhận được 1 Key mỗi 24h.<br>Đừng chia sẻ key này cho ai khác!</p>
+        <p style="color:red; font-size:12px; margin-top:20px;">⚠️ Key này chỉ hiện 1 lần trong 24h!</p>
     </div>
+
+    <script>
+        function copyKey() {
+            // Lấy nội dung key
+            var keyText = document.getElementById("myKey").innerText;
+            
+            // Lệnh copy vào bộ nhớ
+            navigator.clipboard.writeText(keyText).then(function() {
+                alert("✅ Đã COPY thành công!\nNhấn OK để quay lại nhập key.");
+                // Chuyển hướng về trang nhập key
+                window.location.href = "/tool"; 
+            }, function(err) {
+                alert("Lỗi copy: " + err);
+            });
+        }
+    </script>
 </body>
 </html>

@@ -1,24 +1,80 @@
-<div class="section">
-        <h3 class="title">🔑 QUẢN LÝ KEY ACTIVE (AUTO GEN 24H)</h3>
-        <p>Tổng số Key đang chạy: <b style="color:#0f0">{{KEY_COUNT}}</b></p>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OWNER DASHBOARD</title>
+    <style>
+        body { background: #000; color: #d4af37; font-family: sans-serif; padding: 80px 10px 20px 10px; }
+        .header { border-bottom: 2px solid #d4af37; padding-bottom: 20px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.5rem; text-transform: uppercase; }
         
-        <div class="log-box" style="height: 300px;">
-            <table style="width:100%">
-                <thead>
-                    <tr>
-                        <th>Mã Key</th>
-                        <th>Hết hạn lúc</th>
-                        <th>Người dùng (Nếu đã nhập)</th>
-                        <th>Xóa</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {{KEY_LIST}}
-                </tbody>
+        .section { background: #111; padding: 15px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #333; }
+        .title { color: white; border-left: 4px solid #d4af37; padding-left: 10px; margin-top: 0; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* LOG BOX */
+        .log-box { height: 200px; overflow-y: scroll; background: black; padding: 10px; border: 1px dashed #555; font-family: monospace; font-size: 12px; color: #ccc; }
+        .log-row { border-bottom: 1px solid #222; padding: 5px 0; }
+        .time { color: #666; margin-right: 5px; }
+        .user { color: orange; font-weight: bold; }
+        .action { color: #0f0; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; color: #ccc; }
+        th { background: #222; color: yellow; }
+        
+        button { cursor: pointer; padding: 5px 10px; border: none; font-weight: bold; border-radius: 3px; }
+        .btn-kill { background: red; color: white; }
+        
+        /* Scrollbar đẹp */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>👑 OWNER CONTROL CENTER</h1>
+        <a href="/tool" style="color: white; text-decoration: none;">[⬅ Về Tool]</a>
+    </div>
+
+    <div class="section">
+        <h3 class="title">🔑 QUẢN LÝ KEY ({{KEY_COUNT}}) 
+            <form action="/owner/clear-keys" method="POST" style="display:inline"><button class="btn-kill">XÓA HẾT KEY</button></form>
+        </h3>
+        <div class="log-box" style="height: 150px;">
+            <table style="width:100%; margin:0;">
+                <thead><tr><th>Key Code</th><th>IP</th><th>Hết hạn</th><th>Người dùng</th><th>Xóa</th></tr></thead>
+                <tbody>{{KEY_LIST}}</tbody>
             </table>
         </div>
-        
-        <form action="/owner/clear-keys" method="POST" style="margin-top:10px;">
-            <button class="btn btn-kill">XÓA TẤT CẢ KEY</button>
-        </form>
     </div>
+
+    <div class="section">
+        <h3 class="title">👣 NHẬT KÝ HOẠT ĐỘNG USER (CAMERA)
+            <a href="/owner/export-user-logs" style="font-size:12px; color:#0f0; text-decoration:none; border:1px solid #0f0; padding:2px 5px;">📥 TẢI .TXT</a>
+        </h3>
+        <div class="log-box">
+            {{USER_LOGS}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h3 class="title">💀 DEATH NOTE (ADMIN LOG)
+            <a href="/owner/export-admin-logs" style="font-size:12px; color:orange; text-decoration:none; border:1px solid orange; padding:2px 5px;">📥 TẢI .TXT</a>
+        </h3>
+        <div class="log-box">
+            {{ADMIN_LOGS}}
+        </div>
+    </div>
+
+    <div class="section">
+        <h3 class="title">👥 DANH SÁCH THÀNH VIÊN</h3>
+        <table>
+            <thead><tr><th>User</th><th>Role</th><th>Trạng thái</th><th>Hành động</th></tr></thead>
+            <tbody>{{USER_LIST}}</tbody>
+        </table>
+    </div>
+</body>
+</html>
