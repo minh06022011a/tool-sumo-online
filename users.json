@@ -1,1 +1,8 @@
-[]
+[
+  {
+    "username": "admin",
+    "password": "123",
+    "role": "owner",
+    "banned": false
+  }
+]

@@ -9,7 +9,7 @@ const ffmpegPath = require('ffmpeg-static');
 const app = express();
 const upload = multer({ dest: 'uploads/' });
 
-const SECRET_SESSION = "minh_boss_ultimate_security";
+const SECRET_SESSION = "minh_boss_final_ultimate_v99";
 
 // --- LOGO VIP RGB ---
 const VIP_LOGO = `
@@ -21,9 +21,11 @@ const VIP_LOGO = `
     <span style="font-size: 26px; margin-right: 5px; color: yellow; filter: drop-shadow(0 0 5px yellow);">⚡</span> CONVERT <span class="promax-badge">PRO MAX</span>
 </a>`;
 
-app.set('trust proxy', true); 
+// CẤU HÌNH LẤY IP CHUẨN TRÊN RENDER
+app.set('trust proxy', 1); 
+
 app.use(session({ secret: SECRET_SESSION, resave: false, saveUninitialized: true }));
-app.use(express.json()); // QUAN TRỌNG: Đọc dữ liệu JSON (Vân tay)
+app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
@@ -37,6 +39,16 @@ function saveData(file, data) { fs.writeFileSync(file, JSON.stringify(data, null
 function injectLogo(html) { return html.replace(/(<body[^>]*>)/i, '$1' + VIP_LOGO); }
 function renderMessage(res, msg, link) { let tpl = fs.readFileSync(path.join(__dirname, 'message.html'), 'utf-8'); res.send(injectLogo(tpl.replace('REPLACE_MESSAGE', msg).replace('REPLACE_LINK', link))); }
 
+// HÀM LẤY IP THẬT (BÓC TÁCH PROXY)
+function getRealIP(req) {
+    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress || req.socket.remoteAddress;
+    // Nếu IP có dạng "ip1, ip2" thì lấy cái đầu tiên
+    if (ip && ip.indexOf(',') > -1) {
+        ip = ip.split(',')[0].trim();
+    }
+    return ip;
+}
+
 function addUserLog(username, action) {
     let logs = getData(USER_LOG_FILE);
     logs.unshift({ time: new Date().toLocaleString(), user: username, action: action });
@@ -48,10 +60,8 @@ function addAdminLog(action, target, detail) {
     if(logs.length > 50) logs.pop(); saveData(LOG_FILE, logs);
 }
 
-// HÀM DỊCH THỜI GIAN
 function parseDuration(input) {
-    if(!input) return 0;
-    input = input.toLowerCase().trim();
+    if(!input) return 0; input = input.toLowerCase().trim();
     if(input === 'vv' || input === 'forever') return -1;
     let totalMs = 0;
     const s = input.match(/(\d+)s/); const m = input.match(/(\d+)m/); const h = input.match(/(\d+)h/); const d = input.match(/(\d+)d/);
@@ -107,7 +117,7 @@ function requireVip(req, res, next) {
     res.send(injectLogo(html));
 }
 
-// ROUTER CƠ BẢN
+// ROUTER
 app.get('/', (req, res) => res.send(injectLogo(fs.readFileSync(path.join(__dirname, 'index.html'), 'utf-8'))));
 app.get('/login', (req, res) => res.send(injectLogo(fs.readFileSync(path.join(__dirname, 'login.html'), 'utf-8'))));
 app.get('/register', (req, res) => res.send(injectLogo(fs.readFileSync(path.join(__dirname, 'register.html'), 'utf-8'))));
@@ -128,17 +138,15 @@ app.post('/login', (req, res) => {
 });
 app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-// --- HỆ THỐNG AUTO KEY 3.0: CHECK VÂN TAY THIẾT BỊ (FINGERPRINT) ---
-
-// 1. Trang Loading để quét vân tay (Gửi cho Client)
+// --- HỆ THỐNG AUTO KEY SUPER FINGERPRINT ---
 app.get('/lay-key-tu-dong', (req, res) => {
-    // Trả về trang HTML chứa code JavaScript quét vân tay
+    // Trả về trang HTML chứa code quét vân tay
     const html = `
     <!DOCTYPE html>
     <html lang="vi">
     <head>
         <meta charset="UTF-8">
-        <title>ĐANG KIỂM TRA THIẾT BỊ...</title>
+        <title>CHECKING DEVICE...</title>
         <style>
             body { background: black; color: #0f0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: monospace; }
             .loader { border: 5px solid #333; border-top: 5px solid #0f0; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
@@ -147,37 +155,22 @@ app.get('/lay-key-tu-dong', (req, res) => {
     </head>
     <body>
         <div class="loader"></div>
-        <h2 id="status">ĐANG QUÉT VÂN TAY THIẾT BỊ...</h2>
-        <p>Vui lòng chờ giây lát.</p>
-        
+        <h2 id="status">ĐANG KIỂM TRA PHẦN CỨNG...</h2>
         <script>
-            // HÀM TẠO VÂN TAY (Dựa vào Canvas - phần cứng đồ họa)
             function getFingerprint() {
+                // Tạo ID dựa trên Canvas + Độ phân giải + UserAgent
                 try {
                     var canvas = document.createElement('canvas');
                     var ctx = canvas.getContext('2d');
-                    var txt = "SumoTool,Browser,MachineID";
-                    ctx.textBaseline = "top";
-                    ctx.font = "14px 'Arial'";
-                    ctx.textBaseline = "alphabetic";
-                    ctx.fillStyle = "#f60";
-                    ctx.fillRect(125,1,62,20);
-                    ctx.fillStyle = "#069";
-                    ctx.fillText(txt, 2, 15);
-                    ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
-                    ctx.fillText(txt, 4, 17);
-                    // Lấy mã hóa Base64 của hình ảnh vừa vẽ -> Đây là Fingerprint
-                    return canvas.toDataURL().slice(-60); 
-                } catch(e) {
-                    return "Error_" + Math.random();
-                }
+                    var txt = "Sumo_" + navigator.userAgent + screen.width + "x" + screen.height;
+                    ctx.textBaseline = "top"; ctx.font = "14px 'Arial'"; ctx.fillStyle = "#f60";
+                    ctx.fillRect(125,1,62,20); ctx.fillStyle = "#069"; ctx.fillText(txt, 2, 15);
+                    return canvas.toDataURL().slice(-80); // Lấy mã Hash cuối
+                } catch(e) { return "Err_" + Math.random(); }
             }
 
-            // Gửi vân tay lên Server
             async function checkKey() {
                 const fp = getFingerprint();
-                document.getElementById('status').innerText = "ĐANG XỬ LÝ DỮ LIỆU...";
-                
                 try {
                     const response = await fetch('/api/get-key-fp', {
                         method: 'POST',
@@ -185,39 +178,30 @@ app.get('/lay-key-tu-dong', (req, res) => {
                         body: JSON.stringify({ fingerprint: fp })
                     });
                     const data = await response.json();
-                    
-                    // Hiển thị Key
-                    document.body.innerHTML = data.html;
-                } catch(e) {
-                    document.getElementById('status').innerText = "Lỗi kết nối Server!";
-                }
+                    document.body.innerHTML = data.html; // Hiển thị kết quả
+                } catch(e) { document.getElementById('status').innerText = "Lỗi kết nối!"; }
             }
-            
-            // Chạy ngay khi vào trang
-            setTimeout(checkKey, 1000);
+            setTimeout(checkKey, 500);
         </script>
     </body>
-    </html>
-    `;
+    </html>`;
     res.send(html);
 });
 
-// 2. API Xử lý Vân Tay (Server nhận mã hash)
+// API Xử lý logic cấp Key (Đã Fix lấy IP chuẩn)
 app.post('/api/get-key-fp', (req, res) => {
     const { fingerprint } = req.body;
-    const userIP = req.ip || req.connection.remoteAddress;
+    const userIP = getRealIP(req); // Lấy IP thật
     let keys = getData(KEY_FILE);
     const now = Date.now();
 
-    // Logic: Kiểm tra xem Vân Tay này HOẶC IP này đã có key chưa
-    // Fingerprint mạnh hơn IP vì VPN không đổi được Fingerprint
+    // Logic: Nếu trùng IP hoặc trùng Vân Tay -> Trả key cũ
     let existingKey = keys.find(k => 
         (k.fingerprint === fingerprint && k.expires > now) || 
         (k.ip === userIP && k.expires > now)
     );
 
     let keyToShow = "";
-
     if (existingKey) {
         keyToShow = existingKey.code;
     } else {
@@ -225,7 +209,7 @@ app.post('/api/get-key-fp', (req, res) => {
         keys.push({ 
             code: newKey, 
             ip: userIP, 
-            fingerprint: fingerprint, // Lưu lại vân tay
+            fingerprint: fingerprint, 
             created: now, 
             expires: now + 86400000, 
             usedBy: null 
@@ -234,11 +218,9 @@ app.post('/api/get-key-fp', (req, res) => {
         keyToShow = newKey;
     }
 
-    // Đọc file giao diện và trả về cho JS client
     let htmlDisplay = fs.readFileSync(path.join(__dirname, 'key_display.html'), 'utf-8');
-    // Chèn script copy vào HTML trả về để nút copy hoạt động
-    const copyScript = `
-    <script>
+    // Script copy key
+    const copyScript = `<script>
         function copyKey() {
             var keyText = document.getElementById("myKey").innerText;
             navigator.clipboard.writeText(keyText).then(function() {
@@ -247,16 +229,11 @@ app.post('/api/get-key-fp', (req, res) => {
             }, function(err) { alert("Lỗi: " + err); });
         }
     </script>`;
-    
     htmlDisplay = htmlDisplay.replace('{{GENERATED_KEY}}', keyToShow) + copyScript;
-    
-    // Trả về JSON chứa HTML
     res.json({ html: htmlDisplay });
 });
 
-
-// ... (CÁC PHẦN DƯỚI GIỮ NGUYÊN TỪ BẢN TRƯỚC ĐỂ ĐẢM BẢO QUYỀN ADMIN) ...
-
+// CÁC LOGIC KHÁC GIỮ NGUYÊN (Upload, Activate...)
 app.post('/activate-key', requireLogin, (req, res) => {
     const { key } = req.body; let keys = getData(KEY_FILE); let users = getData(USER_FILE);
     const keyData = keys.find(k => k.code === key.trim());
@@ -288,8 +265,8 @@ app.get('/owner', requireLogin, requireOwner, (req, res) => {
     const userLogs = getData(USER_LOG_FILE); const adminLogs = getData(LOG_FILE);
     let html = fs.readFileSync(path.join(__dirname, 'owner.html'), 'utf-8');
     
-    // THÊM CỘT FINGERPRINT VÀO BẢNG KEY ĐỂ EM SOI
-    let keyRows = keys.map(k => `<tr><td style="color:yellow;font-weight:bold;">${k.code}</td><td><span style="font-size:10px">${k.fingerprint ? 'Máy:'+k.fingerprint.substr(0,8)+'...' : k.ip}</span></td><td style="color:${Date.now()>k.expires?'red':'lime'}">${Date.now()>k.expires?'Hết':'Còn'}</td><td>${k.usedBy||'-'}</td><td><form action="/owner/delete-key" method="POST"><input type="hidden" name="keyCode" value="${k.code}"><button style="background:red;color:white;border:none;">Xóa</button></form></td></tr>`).join('');
+    // HIỆN IP THẬT VÀ FINGERPRINT
+    let keyRows = keys.map(k => `<tr><td style="color:yellow;font-weight:bold;">${k.code}</td><td><div style="font-size:10px;color:#0f0">${k.ip}</div><div style="font-size:9px;color:#888">${k.fingerprint?k.fingerprint.substr(0,10)+'...':''}</div></td><td style="color:${Date.now()>k.expires?'red':'lime'}">${Date.now()>k.expires?'Hết':'Còn'}</td><td>${k.usedBy||'-'}</td><td><form action="/owner/delete-key" method="POST"><input type="hidden" name="keyCode" value="${k.code}"><button style="background:red;color:white;border:none;">Xóa</button></form></td></tr>`).join('');
     
     let ulHtml = userLogs.map(l => `<div class="log-row"><span class="time">[${l.time}]</span> <span class="user">${l.user}</span>: <span class="action">${l.action}</span></div>`).join('');
     let alHtml = adminLogs.map(l => `<div class="log-row"><span class="time">[${l.time}]</span> <b style="color:red">${l.action}</b> ${l.target} (${l.detail})</div>`).join('');
@@ -300,9 +277,7 @@ app.get('/owner', requireLogin, requireOwner, (req, res) => {
         let actionBtn = !u.banned 
             ? `<form action="/owner/ban" method="POST" style="display:flex;gap:2px;align-items:center;"><input type="hidden" name="target" value="${u.username}"><input type="text" name="duration" placeholder="10s, vv" style="width:50px;background:#222;color:white;border:1px solid #555;font-size:11px;" required><button class="btn-kill" style="font-size:11px;">TRẢM</button></form>` 
             : `<form action="/owner/unban" method="POST" style="display:inline"><input type="hidden" name="target" value="${u.username}"><button class="btn-save">ÂN XÁ</button></form>`;
-        
         let roleForm = `<form action="/owner/set-role" method="POST" style="display:flex;gap:5px;"><input type="hidden" name="target" value="${u.username}"><select name="newRole" style="background:black;color:cyan;border:1px solid #555;"><option value="user" ${u.role==='user'?'selected':''}>User</option><option value="vip" ${u.role==='vip'?'selected':''}>Vip</option><option value="mod" ${u.role==='mod'?'selected':''}>Mod</option><option value="admin" ${u.role==='admin'?'selected':''}>Admin</option></select><button class="btn-save" style="padding:0 5px;">Lưu</button></form>`;
-
         return `<tr><td>${u.username}</td><td>${roleForm}</td><td style="color:${u.banned?'red':'lime'}">${u.banned?'BỊ TRẢM':'SẠCH'}</td><td>${actionBtn}</td></tr>`; 
     }).join('');
     
@@ -312,13 +287,13 @@ app.get('/owner', requireLogin, requireOwner, (req, res) => {
     res.send(html);
 });
 
+// ACTIONS
 app.post('/owner/set-role', requireLogin, requireOwner, (req, res) => { let users = getData(USER_FILE); let u = users.find(x => x.username === req.body.target); if(u) { u.role = req.body.newRole; saveData(USER_FILE, users); addAdminLog("ROLE", u.username, `Set thành ${u.role.toUpperCase()}`); } res.redirect('/owner'); });
 app.post('/owner/ban', requireLogin, requireOwner, (req, res) => { let users = getData(USER_FILE); let u = users.find(x => x.username === req.body.target); if(u) { u.banned = true; u.banReason = "Admin ngứa tay"; let ms = parseDuration(req.body.duration); if (ms === -1) { u.banUntil = -1; addAdminLog("BAN", u.username, "VĨNH VIỄN"); } else { u.banUntil = Date.now() + ms; addAdminLog("BAN", u.username, `Khóa ${req.body.duration}`); } saveData(USER_FILE, users); } res.redirect('/owner'); });
 app.post('/owner/unban', requireLogin, requireOwner, (req, res) => { let users = getData(USER_FILE); let u = users.find(x => x.username === req.body.target); if(u) { u.banned = false; u.banUntil = 0; saveData(USER_FILE, users); addAdminLog("UNBAN", u.username, "Mở khóa"); } res.redirect('/owner'); });
-
 app.get('/owner/export-user-logs', requireLogin, requireOwner, (req, res) => { const logs = getData(USER_LOG_FILE); const content = logs.map(l => `[${l.time}] User: ${l.user} | Action: ${l.action}`).join('\n'); const filePath = path.join(__dirname, 'UserLogs.txt'); fs.writeFileSync(filePath, content); res.download(filePath); });
 app.get('/owner/export-admin-logs', requireLogin, requireOwner, (req, res) => { const logs = getData(LOG_FILE); const content = logs.map(l => `[${l.time}] ACTION: ${l.action} | Target: ${l.target} | Detail: ${l.detail}`).join('\n'); const filePath = path.join(__dirname, 'DeathNote.txt'); fs.writeFileSync(filePath, content); res.download(filePath); });
 app.post('/owner/delete-key', requireLogin, requireOwner, (req, res) => { let keys = getData(KEY_FILE); keys = keys.filter(k => k.code !== req.body.keyCode); saveData(KEY_FILE, keys); res.redirect('/owner'); });
 app.post('/owner/clear-keys', requireLogin, requireOwner, (req, res) => { saveData(KEY_FILE, []); res.redirect('/owner'); });
 
-app.listen(3000, () => console.log("System ULTIMATE FINGERPRINT running..."));
+app.listen(3000, () => console.log("System REAL IP & FINGERPRINT running..."));
